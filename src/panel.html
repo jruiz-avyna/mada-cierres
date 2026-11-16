@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MADA Salones · Cierres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: summary strip on top, then one card per cierre (a checklist of 4 etapas), severity shown as a left stripe + pill. */
+:root{
+  --bg:#f3f2f6;
+  --surface:#ffffff;
+  --ink:#1c1922;
+  --muted:#686273;
+  --line:#e2dfe8;
+  --accent:#5b2c70;
+  --accent-soft:#f0e8f4;
+  --ok:#1d7a4c; --ok-soft:#e5f4ec;
+  --warn:#a95a06; --warn-soft:#fdf0e1;
+  --bad:#b42318; --bad-soft:#fdeceb;
+  --info:#2b5a9e; --info-soft:#e8eff9;
+  --neutral:#6f6a78; --neutral-soft:#efedf2;
+  --shadow:0 1px 2px rgba(28,25,34,.05),0 4px 14px rgba(28,25,34,.05);
+  --font-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --font-body:"Figtree","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16141a; --surface:#211e27; --ink:#efecf3; --muted:#a59fb0; --line:#34303c;
+    --accent:#c99be0; --accent-soft:#33263b;
+    --ok:#5ccf93; --ok-soft:#1b3328; --warn:#f2a54a; --warn-soft:#3a2a17;
+    --bad:#f47a70; --bad-soft:#3d1f1d; --info:#86b0ef; --info-soft:#1d2a3d;
+    --neutral:#a7a1b1; --neutral-soft:#2b2832;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16141a; --surface:#211e27; --ink:#efecf3; --muted:#a59fb0; --line:#34303c;
+  --accent:#c99be0; --accent-soft:#33263b;
+  --ok:#5ccf93; --ok-soft:#1b3328; --warn:#f2a54a; --warn-soft:#3a2a17;
+  --bad:#f47a70; --bad-soft:#3d1f1d; --info:#86b0ef; --info-soft:#1d2a3d;
+  --neutral:#a7a1b1; --neutral-soft:#2b2832;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 48px;display:flex;flex-direction:column;gap:20px}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px}
+.top h1{font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.top p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.top-actions{display:flex;align-items:center;gap:12px}
+.save-state{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.save-state .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.save-state[data-s="saving"] .dot{background:var(--warn)}
+.save-state[data-s="error"] .dot{background:var(--bad)}
+.btn{border:1px solid transparent;border-radius:10px;padding:9px 14px;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:var(--surface)}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+.btn-ghost:hover{color:var(--ink);border-color:var(--muted)}
+.btn-danger{background:var(--bad);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Banner */
+.banner{border-radius:12px;padding:10px 14px;font-size:14px;background:var(--warn-soft);color:var(--warn);display:none}
+.banner.show{display:block}
+
+/* Summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .k{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tile .v{font-family:var(--font-display);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.tile .s{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.tile.alert .v{color:var(--bad)}
+.tile.next{grid-column:span 2}
+@media (max-width:420px){.tile.next{grid-column:auto}}
+
+/* Grid of cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;align-items:start}
+@media (max-width:400px){.grid{grid-template-columns:1fr}}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px 18px 14px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--neutral)}
+.card[data-st="ok"]::before{background:var(--ok)}
+.card[data-st="warn"]::before{background:var(--warn)}
+.card[data-st="bad"]::before{background:var(--bad)}
+.card[data-st="info"]::before{background:var(--info)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+.pill{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;background:var(--neutral-soft);color:var(--neutral)}
+.pill[data-st="ok"]{background:var(--ok-soft);color:var(--ok)}
+.pill[data-st="warn"]{background:var(--warn-soft);color:var(--warn)}
+.pill[data-st="bad"]{background:var(--bad-soft);color:var(--bad)}
+.pill[data-st="info"]{background:var(--info-soft);color:var(--info)}
+.salon{width:100%;border:1px solid transparent;border-radius:8px;background:transparent;padding:4px 6px;margin:-6px 0 -4px -6px;font-family:var(--font-display);font-size:21px;font-weight:700;line-height:1.2}
+.salon::placeholder{color:var(--muted);opacity:.7;font-weight:500}
+.salon:hover{border-color:var(--line)}
+.salon:focus{border-color:var(--accent);outline:none;background:var(--bg)}
+
+.progress{display:flex;align-items:center;gap:10px}
+.segs{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.seg{height:6px;border-radius:3px;background:var(--line)}
+.seg.on{background:var(--ok)}
+.progress .lbl{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.prices{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:12px;font-weight:600;color:var(--muted)}
+.money{width:100%;border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:7px 10px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.money:focus{border-color:var(--accent);outline:none;background:var(--surface)}
+.money.invalid{border-color:var(--bad)}
+.diff{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;padding:7px 10px;border-radius:9px;background:var(--neutral-soft);color:var(--muted)}
+.diff strong{font-variant-numeric:tabular-nums;color:var(--ink)}
+.diff[data-st="ok"]{background:var(--ok-soft)}
+.diff[data-st="ok"] strong{color:var(--ok)}
+.diff[data-st="bad"]{background:var(--bad-soft)}
+.diff[data-st="bad"] strong{color:var(--bad)}
+
+.stages{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.stage{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start}
+.stage.current{background:linear-gradient(90deg,var(--accent-soft),transparent 85%);margin:0 -18px 0 -22px;padding-left:22px;padding-right:18px}
+.check{appearance:none;-webkit-appearance:none;width:22px;height:22px;margin:1px 0 0;border:2px solid var(--muted);border-radius:7px;background:var(--surface);cursor:pointer;display:grid;place-items:center;transition:background .15s,border-color .15s}
+.check::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px);opacity:0}
+.check:checked{background:var(--ok);border-color:var(--ok)}
+.check:checked::after{opacity:1}
+.check:disabled{cursor:not-allowed;opacity:.6}
+.stage-body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.stage-title{font-weight:600;font-size:14.5px;line-height:1.3}
+.stage-title .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:4px}
+.stage.done .stage-title{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--muted)}
+.stage-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.date-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.date{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:4px 8px;font-size:13px;font-variant-numeric:tabular-nums}
+.date:focus{border-color:var(--accent);outline:none;background:var(--surface)}
+.chip{font-size:12px;font-weight:600;border-radius:6px;padding:2px 8px;background:var(--neutral-soft);color:var(--neutral);white-space:nowrap}
+.chip[data-st="ok"]{background:var(--ok-soft);color:var(--ok)}
+.chip[data-st="warn"]{background:var(--warn-soft);color:var(--warn)}
+.chip[data-st="bad"]{background:var(--bad-soft);color:var(--bad)}
+.chip[data-st="info"]{background:var(--info-soft);color:var(--info)}
+
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+.next-step{font-size:13px;color:var(--muted);min-width:0}
+.next-step b{color:var(--ink);font-weight:600}
+.del{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px 4px;border-radius:6px}
+.del:hover{color:var(--bad)}
+.confirm{display:flex;align-items:center;gap:6px;font-size:13px}
+.confirm .btn{padding:5px 10px;font-size:13px}
+
+.add-card{border:2px dashed var(--line);border-radius:16px;background:transparent;min-height:140px;color:var(--muted);font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.add-card:hover{border-color:var(--accent);color:var(--accent)}
+.add-card .plus{font-family:var(--font-display);font-size:28px;line-height:1}
+
+.skeleton{min-height:420px;background:linear-gradient(100deg,var(--surface) 30%,var(--neutral-soft) 50%,var(--surface) 70%);background-size:300% 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-150% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}.check{transition:none}}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.readonly .salon,.readonly .money,.readonly .date{pointer-events:none}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 14px 9px;font-weight:600;color:var(--muted);cursor:pointer;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Calendar */
+.cal-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:880px){.cal-layout{grid-template-columns:1fr}}
+.cal-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cal-head h2{margin:0;font-family:var(--font-display);font-size:22px;font-weight:700}
+.cal-nav{display:flex;gap:6px}
+.cal-nav .btn{padding:6px 12px;min-width:38px;justify-content:center}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.cal-legend i,.ev-dot{width:8px;height:8px;border-radius:50%;background:var(--neutral);display:inline-block;flex:none}
+[data-st="bad"].ev-dot,.cal-legend i[data-st="bad"]{background:var(--bad)}
+[data-st="warn"].ev-dot,.cal-legend i[data-st="warn"]{background:var(--warn)}
+[data-st="info"].ev-dot,.cal-legend i[data-st="info"]{background:var(--info)}
+[data-st="ok"].ev-dot,.cal-legend i[data-st="ok"]{background:var(--ok)}
+.cal-dow,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-dow span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:0 6px}
+.day{min-height:100px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:5px;display:flex;flex-direction:column;gap:3px;cursor:pointer;text-align:left;min-width:0}
+.day:hover{border-color:var(--muted)}
+.day.out{background:var(--bg);opacity:.6}
+.day.weekend{background:var(--bg)}
+.day.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.day-num{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);align-self:flex-start;min-width:24px;height:24px;border-radius:12px;display:grid;place-items:center;padding:0 4px}
+.day.today .day-num{background:var(--accent);color:var(--surface)}
+.ev{font-size:11.5px;font-weight:600;line-height:1.25;border-radius:5px;padding:2px 5px;background:var(--neutral-soft);color:var(--neutral);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.ev[data-st="bad"]{background:var(--bad-soft);color:var(--bad)}
+.ev[data-st="warn"]{background:var(--warn-soft);color:var(--warn)}
+.ev[data-st="info"]{background:var(--info-soft);color:var(--info)}
+.ev[data-st="ok"]{background:var(--ok-soft);color:var(--ok);text-decoration:line-through}
+.ev-more{font-size:11.5px;color:var(--muted);font-weight:600;padding:0 5px}
+.day .dots{display:none;flex-wrap:wrap;gap:3px;padding:0 3px}
+@media (max-width:600px){
+  .day{min-height:58px;padding:4px}
+  .day .ev,.day .ev-more{display:none}
+  .day .dots{display:flex}
+  .cal-dow span{padding:0;text-align:center;font-size:11px}
+}
+
+/* Agenda */
+.agenda{display:flex;flex-direction:column;gap:12px}
+.ag-block{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ag-block.alert{border-color:var(--bad)}
+.ag-block h3{margin:0;font-family:var(--font-display);font-size:17px;font-weight:700;text-wrap:balance}
+.ag-block h3::first-letter{text-transform:uppercase}
+.ag-block .sub{margin:-6px 0 0;font-size:13px;color:var(--muted)}
+.ag-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ag-item{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:10px;border-radius:10px;background:var(--bg);border-left:4px solid var(--neutral)}
+.ag-item[data-st="bad"]{border-left-color:var(--bad)}
+.ag-item[data-st="warn"]{border-left-color:var(--warn)}
+.ag-item[data-st="info"]{border-left-color:var(--info)}
+.ag-item[data-st="ok"]{border-left-color:var(--ok)}
+.ag-who{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent)}
+.ag-what{font-weight:600;font-size:14px;line-height:1.3}
+.ag-item.done .ag-what{text-decoration:line-through;color:var(--muted)}
+.ag-meta{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.linkish{background:none;border:none;padding:2px 0;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.ag-empty{font-size:14px;color:var(--muted);margin:0}
+.card.flash{animation:flash 1.6s ease-out}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:var(--shadow)}}
+@media (prefers-reduced-motion:reduce){.card.flash{animation:none;box-shadow:0 0 0 3px var(--accent)}}
+
+/* Access gate */
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.gate-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:26px 24px;display:flex;flex-direction:column;gap:16px}
+.gate-card h1{margin:0;font-family:var(--font-display);font-size:24px;line-height:1.15;text-wrap:balance}
+.gate-card .lead{margin:-8px 0 0;color:var(--muted);font-size:14px}
+.gate-card form{display:flex;flex-direction:column;gap:12px}
+.inp{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px 12px}
+.inp:focus{border-color:var(--accent);outline:none;background:var(--surface)}
+.form-err{color:var(--bad);font-size:14px;min-height:1.2em;margin:0}
+.form-note{color:var(--muted);font-size:13px;margin:0}
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+[hidden]{display:none !important}
+
+/* Session chip */
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.who b{color:var(--ink);font-weight:600}
+.role{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:999px;padding:2px 8px;background:var(--accent-soft);color:var(--accent)}
+.is-saving #app{pointer-events:none}
+.is-saving #app .grid,.is-saving #app .cal-layout{opacity:.75}
+
+/* Users view */
+.users-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.users-layout{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-family:var(--font-display);font-size:19px}
+.panel form{display:flex;flex-direction:column;gap:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.user-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.user-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.user-row:last-child{border-bottom:none}
+.user-row .nm{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.user-row .me{font-size:12px;color:var(--muted);font-weight:500}
+.role[data-r="lector"]{background:var(--neutral-soft);color:var(--neutral)}
+.ok-msg{color:var(--ok);font-size:14px;margin:0;min-height:1.2em}
+select.inp{appearance:auto}
+#gateLogin,#gateSetup{display:flex;flex-direction:column;gap:14px}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <span class="lock">🔒 Acceso privado</span>
+    <h1>MADA Salones · Cierres</h1>
+
+    <div id="gateLogin" hidden>
+      <p class="lead">Entra con tu usuario y contraseña.</p>
+      <form id="loginForm" autocomplete="on" novalidate>
+        <div class="field"><label for="lgUser">Usuario o correo</label><input class="inp" id="lgUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+        <div class="field"><label for="lgPass">Contraseña</label><input class="inp" id="lgPass" name="password" type="password" autocomplete="current-password" required></div>
+        <p class="form-err" id="lgErr" role="alert"></p>
+        <button class="btn btn-primary" id="lgBtn" type="submit">Entrar</button>
+      </form>
+    </div>
+
+    <div id="gateSetup" hidden>
+      <p class="lead">Primera vez: crea el usuario administrador. Con él podrás editar el panel y dar acceso a otras personas.</p>
+      <form id="setupForm" autocomplete="off" novalidate>
+        <div class="field"><label for="suUser">Usuario o correo</label><input class="inp" id="suUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+        <div class="field"><label for="suPass">Contraseña (mínimo 10 caracteres)</label><input class="inp" id="suPass" type="password" autocomplete="new-password" required></div>
+        <div class="field"><label for="suPass2">Repite la contraseña</label><input class="inp" id="suPass2" type="password" autocomplete="new-password" required></div>
+        <p class="form-err" id="suErr" role="alert"></p>
+        <button class="btn btn-primary" id="suBtn" type="submit">Crear administrador</button>
+        <p class="form-note">La contraseña no se puede recuperar. Guárdala en un lugar seguro.</p>
+      </form>
+    </div>
+
+    <p class="form-note" id="gateMsg" hidden></p>
+  </div>
+</div>
+
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div>
+      <h1>MADA Salones · Cierres</h1>
+      <p>Seguimiento de cada traspaso, de la carta de intención al cierre.</p>
+    </div>
+    <div class="top-actions">
+      <span class="save-state" id="saveState" data-s="ok" aria-live="polite"><span class="dot"></span><span id="saveText">–</span></span>
+      <button class="btn btn-primary" id="addTop" type="button">＋ Añadir cierre</button>
+      <span class="who"><b id="whoName">–</b><span class="role" id="whoRole">–</span><button class="btn btn-ghost" id="logout" type="button">Salir</button></span>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status"></div>
+
+  <section class="summary" id="summary" aria-label="Resumen">
+    <div class="tile"><span class="k">Cierres</span><span class="v" id="sCount">–</span><span class="s" id="sDone">–</span></div>
+    <div class="tile" id="tAlert"><span class="k">Requieren atención</span><span class="v" id="sAlert">–</span><span class="s">Vencidos o en ≤7 días</span></div>
+    <div class="tile"><span class="k">Traspaso real total</span><span class="v" id="sReal">–</span><span class="s" id="sPedido">–</span></div>
+    <div class="tile"><span class="k">Ahorro negociado</span><span class="v" id="sAhorro">–</span><span class="s" id="sAhorroPct">–</span></div>
+    <div class="tile next"><span class="k">Próximo vencimiento</span><span class="v" id="sNext">–</span><span class="s" id="sNextWhat">–</span></div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Vistas">
+    <button class="tab" role="tab" id="tab-calendario" aria-controls="view-calendario" aria-selected="true" type="button">Calendario</button>
+    <button class="tab" role="tab" id="tab-cierres" aria-controls="view-cierres" aria-selected="false" type="button">Cierres</button>
+    <button class="tab" role="tab" id="tab-usuarios" aria-controls="view-usuarios" aria-selected="false" type="button" hidden>Usuarios</button>
+  </nav>
+
+  <section id="view-calendario" role="tabpanel" aria-labelledby="tab-calendario">
+    <div class="cal-layout">
+      <div class="cal-box">
+        <div class="cal-head">
+          <h2 id="calTitle">–</h2>
+          <div class="cal-nav">
+            <button class="btn btn-ghost" id="calPrev" type="button" aria-label="Mes anterior">‹</button>
+            <button class="btn btn-ghost" id="calToday" type="button">Hoy</button>
+            <button class="btn btn-ghost" id="calNext" type="button" aria-label="Mes siguiente">›</button>
+          </div>
+        </div>
+        <div class="cal-legend" aria-hidden="true">
+          <span><i data-st="bad"></i>Vencida</span><span><i data-st="warn"></i>≤7 días</span><span><i data-st="info"></i>En plazo</span><span><i data-st="ok"></i>Hecha</span>
+        </div>
+        <div class="cal-dow" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <aside class="agenda" id="agenda" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section id="view-cierres" role="tabpanel" aria-labelledby="tab-cierres" hidden>
+    <div class="grid" id="grid" aria-label="Cierres"></div>
+  </section>
+
+  <section id="view-usuarios" role="tabpanel" aria-labelledby="tab-usuarios" hidden>
+    <div class="users-layout">
+      <div class="panel">
+        <h2>Personas con acceso</h2>
+        <ul class="user-list" id="userList"></ul>
+        <p class="form-note">Los lectores ven el calendario y los cierres, pero no pueden cambiar nada. Si alguien olvida su contraseña, elimínalo y vuelve a crearlo.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="panel">
+          <h2>Añadir usuario</h2>
+          <form id="addUserForm" autocomplete="off" novalidate>
+            <div class="row2">
+              <div class="field"><label for="auUser">Usuario o correo</label><input class="inp" id="auUser" autocapitalize="none" spellcheck="false" autocomplete="off"></div>
+              <div class="field"><label for="auRole">Permiso</label><select class="inp" id="auRole"><option value="lector">Lector (solo ver)</option><option value="admin">Administrador (editar)</option></select></div>
+            </div>
+            <div class="field"><label for="auPass">Contraseña (mínimo 10 caracteres)</label><input class="inp" id="auPass" type="password" autocomplete="new-password"></div>
+            <p class="form-err" id="auErr" role="alert"></p>
+            <button class="btn btn-primary" type="submit">Crear usuario y guardar</button>
+            <p class="form-note">Envía el usuario y la contraseña por un canal distinto al del enlace (por ejemplo, el enlace por correo y la contraseña por WhatsApp).</p>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>Cambiar mi contraseña</h2>
+          <form id="pwForm" autocomplete="off" novalidate>
+            <div class="row2">
+              <div class="field"><label for="pwNew">Nueva contraseña</label><input class="inp" id="pwNew" type="password" autocomplete="new-password"></div>
+              <div class="field"><label for="pwNew2">Repítela</label><input class="inp" id="pwNew2" type="password" autocomplete="new-password"></div>
+            </div>
+            <p class="form-err" id="pwErr" role="alert"></p>
+            <button class="btn btn-ghost" type="submit">Cambiar contraseña</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="application/json" id="vault">__VAULT_JSON__</script>
+
+<script>
+(function(){
+  "use strict";
+  /* The page rebuilds itself from this copy of its own source when it saves. */
+  var SHELL_B64 = "__SHELL_B64__";
+  var VAULT = (function(){ try{ var v = JSON.parse(document.getElementById("vault").textContent); if(v && Array.isArray(v.users)) return v; }catch(e){} return {v:1, users:[], data:null}; })();
+  var ITER = 600000;
+
+  var ETAPAS = [
+    {k:"e1", t:"Enviar carta de intención", short:"Carta de intención"},
+    {k:"e2", t:"Enviar propuesta de contrato de traspaso", short:"Propuesta de contrato"},
+    {k:"e3", t:"Fijar fecha de firma de contrato", short:"Fecha de firma"},
+    {k:"e4", t:"Fijar fecha de cierre de traspaso", short:"Fecha de cierre"}
+  ];
+  var EUR = new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0,useGrouping:"always"});
+  var DF = new Intl.DateTimeFormat("es-ES",{day:"2-digit",month:"short",year:"numeric"});
+
+  var state = {}, cards = {};
+  var readOnly = true, loaded = false, me = null, role = null, dataKey = null;
+  var grid = document.getElementById("grid");
+
+  /* ---------- small helpers ---------- */
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function blank(n){ var d={n:n,salon:"",pedido:null,real:null}; ETAPAS.forEach(function(s){ d[s.k]={hecho:false,fecha:""}; }); return d; }
+  function norm(raw, id){
+    var d = blank(Number(raw && raw.n) || Number(String(id).replace(/\D/g,"")) || 0);
+    if(!raw) return d;
+    d.salon = typeof raw.salon==="string" ? raw.salon : "";
+    d.pedido = typeof raw.pedido==="number" && isFinite(raw.pedido) ? raw.pedido : null;
+    d.real = typeof raw.real==="number" && isFinite(raw.real) ? raw.real : null;
+    ETAPAS.forEach(function(s){
+      var e = raw[s.k] || {};
+      d[s.k] = {hecho: e.hecho===true, fecha: (typeof e.fecha==="string" && /^\d{4}-\d{2}-\d{2}$/.test(e.fecha)) ? e.fecha : ""};
+    });
+    return d;
+  }
+  function daysUntil(iso){
+    var p = iso.split("-").map(Number); var t = new Date(p[0],p[1]-1,p[2]);
+    var now = new Date(); var today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    return Math.round((t - today)/864e5);
+  }
+  function fmtDate(iso){ var p=iso.split("-").map(Number); return DF.format(new Date(p[0],p[1]-1,p[2])).replace(".",""); }
+  function parseEuro(s){
+    s = String(s||"").replace(/[€\s]/g,"");
+    if(!s) return {ok:true,v:null};
+    s = s.replace(/\./g,"").replace(",",".");
+    var v = Number(s);
+    return isFinite(v) && v>=0 ? {ok:true,v:Math.round(v*100)/100} : {ok:false};
+  }
+  function dateChip(stage){
+    if(stage.hecho) return {st:"ok", t:"Hecha"};
+    if(!stage.fecha) return {st:"neutral", t:"Sin fecha límite"};
+    var d = daysUntil(stage.fecha);
+    if(d<0) return {st:"bad", t:"Vencida hace "+(-d)+(d===-1?" día":" días")};
+    if(d===0) return {st:"warn", t:"Vence hoy"};
+    if(d===1) return {st:"warn", t:"Vence mañana"};
+    if(d<=7) return {st:"warn", t:"Faltan "+d+" días"};
+    return {st:"info", t:"Faltan "+d+" días"};
+  }
+  function status(d){
+    var done = ETAPAS.filter(function(s){ return d[s.k].hecho; }).length;
+    var nextIdx = -1;
+    for(var i=0;i<ETAPAS.length;i++){ if(!d[ETAPAS[i].k].hecho){ nextIdx=i; break; } }
+    if(nextIdx<0) return {done:done, nextIdx:-1, st:"ok", label:"Completado"};
+    var f = d[ETAPAS[nextIdx].k].fecha;
+    if(!f) return {done:done, nextIdx:nextIdx, st:"neutral", label:"Sin fecha"};
+    var days = daysUntil(f);
+    if(days<0) return {done:done, nextIdx:nextIdx, st:"bad", label:"Vencida", days:days, fecha:f};
+    if(days<=7) return {done:done, nextIdx:nextIdx, st:"warn", label:"Vence pronto", days:days, fecha:f};
+    return {done:done, nextIdx:nextIdx, st:"info", label:"En plazo", days:days, fecha:f};
+  }
+  function setSave(s, t){ $("saveState").setAttribute("data-s", s); $("saveText").textContent = t; }
+  function banner(msg){ var b=$("banner"); if(msg){ b.textContent=msg; b.classList.add("show"); } else { b.textContent=""; b.classList.remove("show"); } }
+
+  /* ---------- crypto ---------- */
+  var te = new TextEncoder(), td = new TextDecoder();
+  function toB64(buf){ var b=new Uint8Array(buf), s=""; for(var i=0;i<b.length;i+=0x8000) s+=String.fromCharCode.apply(null, b.subarray(i,i+0x8000)); return btoa(s); }
+  function fromB64(s){ var bin=atob(s), b=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i); return b; }
+  function rand(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+  function pwKey(pw, salt, iter){
+    return crypto.subtle.importKey("raw", te.encode(pw), "PBKDF2", false, ["deriveKey"]).then(function(base){
+      return crypto.subtle.deriveKey({name:"PBKDF2", salt:salt, iterations:iter, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+    });
+  }
+  function aesKey(raw){ return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt","decrypt"]); }
+  function seal(key, bytes){ var iv=rand(12); return crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, bytes).then(function(ct){ return {iv:toB64(iv), ct:toB64(ct)}; }); }
+  function unseal(key, box){ return crypto.subtle.decrypt({name:"AES-GCM", iv:fromB64(box.iv)}, key, fromB64(box.ct)).then(function(b){ return new Uint8Array(b); }); }
+  function wrapFor(username, pw, r, raw){
+    var salt = rand(16);
+    return pwKey(pw, salt, ITER).then(function(k){ return seal(k, raw); }).then(function(box){
+      return {u:username, role:r, salt:toB64(salt), iter:ITER, iv:box.iv, ct:box.ct};
+    });
+  }
+  function unwrap(user, pw){ return pwKey(pw, fromB64(user.salt), user.iter||ITER).then(function(k){ return unseal(k, user); }); }
+  function decryptData(raw){
+    if(!VAULT.data) return Promise.resolve({cierres:{}});
+    return aesKey(raw).then(function(k){ return unseal(k, VAULT.data); }).then(function(b){ return JSON.parse(td.decode(b)); });
+  }
+  function encryptState(){
+    var plain = {}; Object.keys(state).forEach(function(id){ plain[id] = state[id]; });
+    return aesKey(dataKey).then(function(k){ return seal(k, te.encode(JSON.stringify({cierres:plain}))); });
+  }
+
+  /* ---------- rebuilding the page ---------- */
+  function shellText(){ return td.decode(fromB64(SHELL_B64)); }
+  function buildHtml(vault){
+    var json = JSON.stringify(vault).replace(/</g,"\\u003c");
+    var t = shellText();
+    var P1 = "__SHELL" + "_B64__", P2 = "__VAULT" + "_JSON__";
+    var i1 = t.indexOf(P1); if(i1<0) throw new Error("plantilla");
+    t = t.slice(0,i1) + SHELL_B64 + t.slice(i1+P1.length);
+    var i2 = t.indexOf(P2); if(i2<0) throw new Error("plantilla");
+    return t.slice(0,i2) + json + t.slice(i2+P2.length);
+  }
+
+  /* ---------- artifact capability ---------- */
+  var artifactReady = new Promise(function(resolve){
+    var tries = 0;
+    (function wait(){
+      if(window.claude && typeof window.claude.use === "function"){ window.claude.use("artifact").then(resolve, function(){ resolve(null); }); return; }
+      if(++tries > 150){ resolve(null); return; }
+      setTimeout(wait, 100);
+    })();
+  });
+
+  /* ---------- session (this browser tab only) ---------- */
+  var SKEY = "mada-cierres-sesion";
+  function saveSession(ui){ try{ sessionStorage.setItem(SKEY, JSON.stringify({u:me, k:toB64(dataKey), ui:ui||null})); }catch(e){} }
+  function readSession(){ try{ return JSON.parse(sessionStorage.getItem(SKEY)||"null"); }catch(e){ return null; } }
+  function clearSession(){ try{ sessionStorage.removeItem(SKEY); }catch(e){} }
+  function findUser(name){ name = String(name||"").trim().toLowerCase(); for(var i=0;i<VAULT.users.length;i++){ if(VAULT.users[i].u.toLowerCase()===name) return VAULT.users[i]; } return null; }
+
+  /* ---------- saving (publishes a new encrypted version of the page) ---------- */
+  var saveTimer = null, unsaved = false, saving = false;
+  function markDirty(){
+    if(readOnly) return;
+    unsaved = true; setSave("saving","Cambios sin guardar");
+    clearTimeout(saveTimer); saveTimer = setTimeout(trySave, 4000);
+  }
+  function typingNow(){ var a=document.activeElement; return !!(a && a.tagName==="INPUT" && (a.type==="text" || a.type==="password" || a.classList.contains("money"))); }
+  function trySave(){ if(typingNow()){ saveTimer = setTimeout(trySave, 1500); return; } doSave(); }
+  function uiState(){ return {view:currentView, sel:cal.sel, y:cal.y, m:cal.m, scroll:window.scrollY}; }
+  function doSave(){
+    if(saving || readOnly) return Promise.resolve(false);
+    clearTimeout(saveTimer);
+    saving = true; setSave("saving","Guardando…"); document.body.classList.add("is-saving");
+    return artifactReady.then(function(ns){
+      if(!ns) throw {code:"not_granted"};
+      return encryptState().then(function(box){
+        var html = buildHtml({v:1, users:VAULT.users, data:box});
+        saveSession(uiState());
+        return ns.publish(html);
+      });
+    }).then(function(){
+      unsaved = false; setSave("ok","Guardado");   // every open view reloads to the new version
+      return true;
+    }, function(err){
+      saving = false; document.body.classList.remove("is-saving");
+      var code = err && err.code;
+      if(code==="conflict"){
+        unsaved = false; setSave("error","No guardado");
+        banner("Otra persona ha guardado a la vez. El panel se recarga con su versión: repite tu último cambio.");
+      } else if(["not_writer","not_granted","capability_disabled","capability_removed","not_declared","consent_required"].indexOf(code)>=0){
+        readOnly = true; document.body.classList.add("readonly"); setSave("error","Solo lectura");
+        banner("Esta vista no puede guardar cambios (motivo: "+code+"). Tu último cambio no se ha guardado.");
+        renderAll();
+      } else if(code==="rate_limited"){
+        setSave("saving","Cambios sin guardar"); saveTimer = setTimeout(trySave, 15000);
+      } else {
+        setSave("error","Error al guardar");
+        banner("No se ha podido guardar (motivo: "+(code||"desconocido")+"). Se volverá a intentar en unos segundos.");
+        saveTimer = setTimeout(trySave, 20000);
+      }
+      return false;
+    });
+  }
+  window.addEventListener("beforeunload", function(e){ if(unsaved && !saving){ e.preventDefault(); e.returnValue = ""; } });
+
+  /* ---------- cards ---------- */
+  function flushSoon(){ if(unsaved){ clearTimeout(saveTimer); saveTimer = setTimeout(trySave, 1200); } }
+  function buildCard(id){
+    var c = el("article","card"); c.dataset.id = id;
+    var head = el("div","card-head");
+    var eyebrow = el("span","eyebrow"), pill = el("span","pill");
+    head.append(eyebrow, pill);
+
+    var salon = el("input","salon"); salon.type="text"; salon.id="salon-"+id;
+    salon.placeholder="Nombre del salón"; salon.setAttribute("aria-label","Nombre del salón"); salon.autocomplete="off";
+    salon.addEventListener("input", function(){ state[id].salon = salon.value; renderSummary(); markDirty(); });
+    salon.addEventListener("blur", flushSoon);
+
+    var prog = el("div","progress"), segs = el("div","segs"), segEls = [];
+    ETAPAS.forEach(function(){ var s=el("span","seg"); segs.append(s); segEls.push(s); });
+    var plbl = el("span","lbl"); prog.append(segs, plbl);
+
+    var prices = el("div","prices");
+    function moneyField(key, label){
+      var f = el("div","field"), lab = el("label",null,label), inp = el("input","money");
+      inp.type="text"; inp.inputMode="decimal"; inp.id=key+"-"+id; lab.htmlFor=inp.id; inp.placeholder="Importe"; inp.autocomplete="off";
+      inp.addEventListener("focus", function(){ if(readOnly) return; var v=state[id][key]; inp.value = v==null ? "" : String(v).replace(".",","); inp.select(); });
+      inp.addEventListener("input", function(){
+        var r = parseEuro(inp.value); inp.classList.toggle("invalid", !r.ok);
+        if(r.ok){ state[id][key] = r.v; refresh(id); markDirty(); }
+      });
+      inp.addEventListener("blur", function(){
+        var r = parseEuro(inp.value); inp.classList.toggle("invalid", !r.ok);
+        if(r.ok) inp.value = r.v==null ? "" : EUR.format(r.v);
+        flushSoon();
+      });
+      f.append(lab, inp); return {f:f, inp:inp};
+    }
+    var mp = moneyField("pedido","Traspaso pedido"), mr = moneyField("real","Traspaso real");
+    var diff = el("div","diff"), diffL = el("span"), diffV = el("strong"); diff.append(diffL, diffV);
+    prices.append(mp.f, mr.f, diff);
+
+    var ol = el("ol","stages"), stageRefs = [];
+    ETAPAS.forEach(function(s, i){
+      var li = el("li","stage");
+      var chk = el("input","check"); chk.type="checkbox"; chk.id=s.k+"-"+id;
+      chk.addEventListener("change", function(){ state[id][s.k].hecho = chk.checked; refresh(id); markDirty(); });
+      var body = el("div","stage-body");
+      var title = el("label","stage-title"); title.htmlFor = chk.id;
+      title.append(el("span","n","Etapa "+(i+1)+" ·"), document.createTextNode(" "+s.t));
+      var meta = el("div","stage-meta");
+      var dw = el("label","date-wrap"); dw.append(document.createTextNode("Fecha límite"));
+      var date = el("input","date"); date.type="date"; date.id="f"+s.k+"-"+id;
+      date.addEventListener("change", function(){ state[id][s.k].fecha = date.value || ""; refresh(id); markDirty(); });
+      dw.append(date);
+      var chip = el("span","chip");
+      meta.append(dw, chip); body.append(title, meta); li.append(chk, body); ol.append(li);
+      stageRefs.push({li:li, chk:chk, date:date, chip:chip});
+    });
+
+    var foot = el("div","card-foot"), next = el("div","next-step"), delWrap = el("div");
+    var del = el("button","del","Eliminar"); del.type="button";
+    del.addEventListener("click", function(){ askDelete(id, delWrap, del); });
+    delWrap.append(del); foot.append(next, delWrap);
+
+    c.append(head, salon, prog, prices, ol, foot);
+    return {el:c, eyebrow:eyebrow, pill:pill, salon:salon, segs:segEls, plbl:plbl, pedido:mp.inp, real:mr.inp, diff:diff, diffL:diffL, diffV:diffV, stages:stageRefs, next:next, del:del};
+  }
+
+  function askDelete(id, wrap, del){
+    if(readOnly) return;
+    var d = state[id], name = "Cierre "+d.n + (d.salon ? " ("+d.salon+")" : "");
+    wrap.textContent = "";
+    var box = el("div","confirm");
+    box.append(document.createTextNode("¿Eliminar "+name+"?"));
+    var yes = el("button","btn btn-danger","Eliminar"); yes.type="button";
+    var no = el("button","btn btn-ghost","Cancelar"); no.type="button";
+    yes.addEventListener("click", function(){ delete state[id]; renderAll(); markDirty(); clearTimeout(saveTimer); doSave(); });
+    no.addEventListener("click", function(){ wrap.textContent=""; wrap.append(del); del.focus(); });
+    box.append(yes, no); wrap.append(box); no.focus();
+  }
+
+  function refresh(id){
+    var d = state[id], r = cards[id]; if(!d || !r) return;
+    var st = status(d);
+    r.el.dataset.st = st.st;
+    r.eyebrow.textContent = "Cierre "+d.n;
+    r.pill.dataset.st = st.st; r.pill.textContent = st.label;
+    if(document.activeElement !== r.salon) r.salon.value = d.salon;
+    r.segs.forEach(function(s,i){ s.classList.toggle("on", d[ETAPAS[i].k].hecho); });
+    r.plbl.textContent = st.done+" de 4 etapas";
+    if(document.activeElement !== r.pedido){ r.pedido.value = d.pedido==null ? "" : EUR.format(d.pedido); r.pedido.classList.remove("invalid"); }
+    if(document.activeElement !== r.real){ r.real.value = d.real==null ? "" : EUR.format(d.real); r.real.classList.remove("invalid"); }
+    if(d.pedido!=null && d.real!=null){
+      var diff = d.pedido - d.real, pct = d.pedido ? Math.round(diff/d.pedido*1000)/10 : 0;
+      if(diff>0){ r.diff.dataset.st="ok"; r.diffL.textContent="Ahorro negociado"; r.diffV.textContent = EUR.format(diff)+" · "+String(pct).replace(".",",")+" %"; }
+      else if(diff<0){ r.diff.dataset.st="bad"; r.diffL.textContent="Por encima de lo pedido"; r.diffV.textContent = EUR.format(-diff)+" · "+String(-pct).replace(".",",")+" %"; }
+      else { r.diff.dataset.st=""; r.diffL.textContent="Diferencia"; r.diffV.textContent="Sin descuento"; }
+    } else { r.diff.dataset.st=""; r.diffL.textContent="Diferencia"; r.diffV.textContent = d.pedido==null ? "Falta precio pedido" : "Falta precio real"; }
+    ETAPAS.forEach(function(s,i){
+      var e = d[s.k], sr = r.stages[i];
+      sr.chk.checked = e.hecho; sr.chk.disabled = readOnly;
+      if(document.activeElement !== sr.date) sr.date.value = e.fecha;
+      sr.date.disabled = readOnly;
+      var ch = dateChip(e); sr.chip.dataset.st = ch.st; sr.chip.textContent = ch.t;
+      sr.li.classList.toggle("done", e.hecho);
+      sr.li.classList.toggle("current", i===st.nextIdx);
+    });
+    r.salon.readOnly = readOnly; r.pedido.readOnly = readOnly; r.real.readOnly = readOnly;
+    if(readOnly && !d.salon) r.salon.placeholder = "Salón sin nombre";
+    r.del.hidden = readOnly;
+    r.next.textContent = "";
+    if(st.nextIdx<0) r.next.append(document.createTextNode("Traspaso cerrado"));
+    else {
+      r.next.append(document.createTextNode("Siguiente: "), el("b",null,ETAPAS[st.nextIdx].short));
+      if(st.fecha) r.next.append(document.createTextNode(" · "+fmtDate(st.fecha)));
+    }
+    renderSummary();
+  }
+
+  function sortedIds(){ return Object.keys(state).sort(function(a,b){ return (state[a].n - state[b].n) || (a<b?-1:1); }); }
+
+  function renderAll(){
+    if(!loaded) return;
+    var ids = sortedIds();
+    Object.keys(cards).forEach(function(id){ if(!state[id]){ cards[id].el.remove(); delete cards[id]; } });
+    grid.querySelectorAll(".skeleton,.empty,.add-card").forEach(function(n){ n.remove(); });
+    ids.forEach(function(id, i){
+      if(!cards[id]) cards[id] = buildCard(id);
+      if(grid.children[i] !== cards[id].el) grid.insertBefore(cards[id].el, grid.children[i] || null);
+      refresh(id);
+    });
+    if(!ids.length){
+      grid.append(el("div","empty", readOnly ? "Todavía no hay cierres." : "Todavía no hay cierres. Añade el primero con el botón de arriba."));
+    }
+    if(!readOnly){
+      var add = el("button","add-card"); add.type="button";
+      add.append(el("span","plus","＋"), el("span",null,"Añadir Cierre "+nextN()));
+      add.addEventListener("click", addCierre);
+      grid.append(add);
+    }
+    $("addTop").hidden = readOnly;
+    renderSummary();
+  }
+
+  function renderSummary(){
+    var ids = sortedIds(), done=0, alert=0, real=0, pedido=0, ahorro=0, base=0, hasReal=false, hasPed=false, best=null;
+    ids.forEach(function(id){
+      var d = state[id], st = status(d);
+      if(st.nextIdx<0) done++;
+      if(st.st==="bad" || st.st==="warn") alert++;
+      if(d.real!=null){ real+=d.real; hasReal=true; }
+      if(d.pedido!=null){ pedido+=d.pedido; hasPed=true; }
+      if(d.real!=null && d.pedido!=null){ ahorro += d.pedido-d.real; base += d.pedido; }
+      if(st.fecha && (!best || st.fecha < best.fecha)) best = {fecha:st.fecha, d:d, st:st};
+    });
+    $("sCount").textContent = ids.length;
+    $("sDone").textContent = done+" completado"+(done===1?"":"s");
+    $("sAlert").textContent = alert;
+    $("tAlert").classList.toggle("alert", alert>0);
+    $("sReal").textContent = hasReal ? EUR.format(real) : "–";
+    $("sPedido").textContent = hasPed ? "Pedido: "+EUR.format(pedido) : "Sin precios todavía";
+    $("sAhorro").textContent = base ? EUR.format(ahorro) : "–";
+    $("sAhorroPct").textContent = base ? String(Math.round(ahorro/base*1000)/10).replace(".",",")+" % sobre lo pedido" : "Con precio pedido y real";
+    if(best){
+      var dd = best.st.days;
+      $("sNext").textContent = fmtDate(best.fecha);
+      $("sNextWhat").textContent = "Cierre "+best.d.n+(best.d.salon?" · "+best.d.salon:"")+" · "+ETAPAS[best.st.nextIdx].short+" · "+(dd<0?"vencida hace "+(-dd)+" d":dd===0?"hoy":"en "+dd+" d");
+    } else { $("sNext").textContent = "–"; $("sNextWhat").textContent = "Pon fechas límite en las etapas pendientes"; }
+    renderCalendar();
+  }
+
+  /* ---------- calendar ---------- */
+  var now0 = new Date();
+  var cal = {y: now0.getFullYear(), m: now0.getMonth(), sel: isoOf(now0)};
+  var MONTH = new Intl.DateTimeFormat("es-ES",{month:"long", year:"numeric"});
+  var LONG = new Intl.DateTimeFormat("es-ES",{weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  function pad(n){ return (n<10?"0":"")+n; }
+  function isoOf(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function dateOf(iso){ var p=iso.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
+
+  function events(){
+    var out = [];
+    sortedIds().forEach(function(id){
+      var d = state[id], st = status(d);
+      ETAPAS.forEach(function(s, i){
+        var e = d[s.k]; if(!e.fecha) return;
+        var days = daysUntil(e.fecha);
+        var evSt = e.hecho ? "ok" : days<0 ? "bad" : days<=7 ? "warn" : "info";
+        out.push({id:id, k:s.k, i:i, n:d.n, salon:d.salon, fecha:e.fecha, hecho:e.hecho, st:evSt, days:days, current: i===st.nextIdx});
+      });
+    });
+    out.sort(function(a,b){ return a.fecha<b.fecha?-1:a.fecha>b.fecha?1:(a.n-b.n)||(a.i-b.i); });
+    return out;
+  }
+  function who(ev){ return "Cierre "+ev.n+(ev.salon ? " · "+ev.salon : ""); }
+
+  function renderCalendar(){
+    var calGrid = $("calGrid"); if(!calGrid || !loaded) return;
+    var keepFocus = document.activeElement && document.activeElement.id;
+    var evs = events(), byDay = {};
+    evs.forEach(function(e){ (byDay[e.fecha] = byDay[e.fecha] || []).push(e); });
+    var mt = MONTH.format(new Date(cal.y, cal.m, 1)); $("calTitle").textContent = mt.charAt(0).toUpperCase()+mt.slice(1);
+    calGrid.textContent = "";
+    var first = new Date(cal.y, cal.m, 1);
+    var offset = (first.getDay()+6)%7;
+    var start = new Date(cal.y, cal.m, 1-offset);
+    var daysInMonth = new Date(cal.y, cal.m+1, 0).getDate();
+    var cells = Math.ceil((offset+daysInMonth)/7)*7;
+    var todayIso = isoOf(new Date());
+    for(var i=0;i<cells;i++){
+      var dt = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
+      var iso = isoOf(dt), list = byDay[iso] || [];
+      var b = el("button","day"); b.type="button"; b.id="day-"+iso; b.dataset.iso = iso;
+      if(dt.getMonth()!==cal.m) b.classList.add("out");
+      if(dt.getDay()===0 || dt.getDay()===6) b.classList.add("weekend");
+      if(iso===todayIso) b.classList.add("today");
+      if(iso===cal.sel) b.classList.add("sel");
+      b.setAttribute("aria-label", LONG.format(dt)+(list.length ? ", "+list.length+(list.length===1?" tarea":" tareas") : ""));
+      b.append(el("span","day-num", String(dt.getDate())));
+      list.slice(0,3).forEach(function(e){
+        var chip = el("span","ev", "C"+e.n+" · "+ETAPAS[e.i].short); chip.dataset.st = e.st;
+        chip.title = who(e)+" — "+ETAPAS[e.i].t; b.append(chip);
+      });
+      if(list.length>3) b.append(el("span","ev-more","+"+(list.length-3)+" más"));
+      if(list.length){ var dots = el("span","dots"); list.forEach(function(e){ var dd=el("span","ev-dot"); dd.dataset.st=e.st; dots.append(dd); }); b.append(dots); }
+      b.addEventListener("click", function(){
+        cal.sel = this.dataset.iso;
+        var d = dateOf(cal.sel);
+        if(d.getMonth()!==cal.m || d.getFullYear()!==cal.y){ cal.y=d.getFullYear(); cal.m=d.getMonth(); }
+        renderCalendar();
+        var again = $("day-"+cal.sel); if(again) again.focus();
+      });
+      calGrid.append(b);
+    }
+    renderAgenda(evs);
+    if(keepFocus && keepFocus.indexOf("ag-")===0){ var f=$(keepFocus); if(f) f.focus(); }
+  }
+
+  function agendaItem(ev, prefix){
+    var li = el("li","ag-item"); li.dataset.st = ev.st; if(ev.hecho) li.classList.add("done");
+    var chk = el("input","check"); chk.type="checkbox"; chk.id="ag-"+prefix+"-"+ev.id+"-"+ev.k;
+    chk.checked = ev.hecho; chk.disabled = readOnly;
+    chk.setAttribute("aria-label", "Marcar como hecha: "+ETAPAS[ev.i].t+", "+who(ev));
+    chk.addEventListener("change", function(){ state[ev.id][ev.k].hecho = chk.checked; refresh(ev.id); markDirty(); });
+    var body = el("div","stage-body");
+    body.append(el("span","ag-who", who(ev)), el("span","ag-what", "Etapa "+(ev.i+1)+" · "+ETAPAS[ev.i].t));
+    var meta = el("div","stage-meta");
+    var dw = el("label","date-wrap"); dw.append(document.createTextNode("Fecha límite"));
+    var date = el("input","date"); date.type="date"; date.id="ag-"+prefix+"-f-"+ev.id+"-"+ev.k; date.value = ev.fecha; date.disabled = readOnly;
+    date.addEventListener("change", function(){ state[ev.id][ev.k].fecha = date.value || ""; refresh(ev.id); markDirty(); });
+    dw.append(date);
+    var ch = dateChip({hecho:ev.hecho, fecha:ev.fecha}); var chip = el("span","chip", ch.t); chip.dataset.st = ch.st;
+    var go = el("button","linkish","Ver cierre"); go.type="button";
+    go.addEventListener("click", function(){ showCard(ev.id); });
+    meta.append(dw, chip, go); body.append(meta); li.append(chk, body);
+    return li;
+  }
+
+  function renderAgenda(evs){
+    var ag = $("agenda"); ag.textContent = "";
+    var b1 = el("div","ag-block");
+    var dayEvs = evs.filter(function(e){ return e.fecha===cal.sel; });
+    b1.append(el("h3",null, LONG.format(dateOf(cal.sel))));
+    b1.append(el("p","sub", dayEvs.length ? dayEvs.length+(dayEvs.length===1?" tarea":" tareas")+" con fecha límite este día" : "Nada programado este día."));
+    if(dayEvs.length){ var l1 = el("ul","ag-list"); dayEvs.forEach(function(e){ l1.append(agendaItem(e,"d")); }); b1.append(l1); }
+    ag.append(b1);
+    var late = evs.filter(function(e){ return !e.hecho && e.days<0; });
+    if(late.length){
+      var b2 = el("div","ag-block alert");
+      b2.append(el("h3",null,"Atrasadas"), el("p","sub", late.length+(late.length===1?" etapa pendiente con la fecha pasada":" etapas pendientes con la fecha pasada")));
+      var l2 = el("ul","ag-list"); late.forEach(function(e){ l2.append(agendaItem(e,"l")); }); b2.append(l2);
+      ag.append(b2);
+    }
+    var soon = evs.filter(function(e){ return !e.hecho && e.days>=0 && e.days<=7 && e.fecha!==cal.sel; });
+    var b3 = el("div","ag-block");
+    b3.append(el("h3",null,"Próximos 7 días"));
+    if(soon.length){ var l3 = el("ul","ag-list"); soon.forEach(function(e){ l3.append(agendaItem(e,"s")); }); b3.append(l3); }
+    else b3.append(el("p","ag-empty", evs.length ? "Sin más fechas límite esta semana." : "Pon fechas límite a las etapas en la pestaña Cierres y aparecerán aquí."));
+    ag.append(b3);
+  }
+
+  function shiftMonth(delta){ cal.m += delta; if(cal.m<0){cal.m=11;cal.y--;} if(cal.m>11){cal.m=0;cal.y++;} renderCalendar(); }
+  $("calPrev").addEventListener("click", function(){ shiftMonth(-1); });
+  $("calNext").addEventListener("click", function(){ shiftMonth(1); });
+  $("calToday").addEventListener("click", function(){ var t=new Date(); cal.y=t.getFullYear(); cal.m=t.getMonth(); cal.sel=isoOf(t); renderCalendar(); });
+
+  /* ---------- tabs ---------- */
+  var currentView = "calendario";
+  function views(){ return role==="admin" ? ["calendario","cierres","usuarios"] : ["calendario","cierres"]; }
+  function showView(name, fromHash){
+    var vs = views(); if(vs.indexOf(name)<0) name = "calendario";
+    currentView = name;
+    ["calendario","cierres","usuarios"].forEach(function(v){
+      var on = v===name;
+      $("tab-"+v).setAttribute("aria-selected", on ? "true" : "false");
+      $("tab-"+v).tabIndex = on ? 0 : -1;
+      $("view-"+v).hidden = !on;
+    });
+    if(!fromHash){ try{ history.replaceState(null,"","#"+name); }catch(e){ location.hash = name; } }
+  }
+  ["calendario","cierres","usuarios"].forEach(function(v){
+    var t = $("tab-"+v);
+    t.addEventListener("click", function(){ showView(v); });
+    t.addEventListener("keydown", function(ev){
+      if(ev.key!=="ArrowRight" && ev.key!=="ArrowLeft") return;
+      var vs = views(), i = vs.indexOf(v), nx = vs[(i+(ev.key==="ArrowRight"?1:vs.length-1))%vs.length];
+      showView(nx); $("tab-"+nx).focus(); ev.preventDefault();
+    });
+  });
+  window.addEventListener("hashchange", function(){ if(loaded) showView(location.hash.slice(1), true); });
+
+  function showCard(id){
+    showView("cierres");
+    var c = cards[id]; if(!c) return;
+    c.el.scrollIntoView({block:"start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+    c.el.classList.remove("flash"); void c.el.offsetWidth; c.el.classList.add("flash");
+  }
+
+  function nextN(){ var m=0; Object.keys(state).forEach(function(id){ m=Math.max(m,state[id].n||0); }); return m+1; }
+  function addCierre(){
+    if(readOnly) return;
+    var n = nextN(), id = "c"+n;
+    while(state[id]){ n++; id="c"+n; }
+    state[id] = blank(n);
+    renderAll();
+    showView("cierres");
+    if(cards[id]){ cards[id].salon.focus(); cards[id].el.scrollIntoView({block:"nearest"}); }
+    markDirty();
+  }
+  $("addTop").addEventListener("click", addCierre);
+
+  /* ---------- users (admin) ---------- */
+  var USER_RE = /^[a-z0-9._@+-]{3,60}$/i;
+  function renderUsers(){
+    var ul = $("userList"); ul.textContent = "";
+    VAULT.users.forEach(function(u){
+      var li = el("li","user-row"), nm = el("span","nm");
+      nm.append(el("span",null,u.u));
+      var r = el("span","role", u.role==="admin" ? "Administrador" : "Lector"); r.dataset.r = u.role; nm.append(r);
+      if(u.u===me) nm.append(el("span","me","(tú)"));
+      li.append(nm);
+      if(u.u!==me){
+        var wrap = el("div"), del = el("button","del","Eliminar"); del.type="button";
+        del.addEventListener("click", function(){
+          wrap.textContent = "";
+          var box = el("div","confirm"); box.append(document.createTextNode("¿Quitar acceso a "+u.u+"?"));
+          var yes = el("button","btn btn-danger","Quitar"); yes.type="button";
+          var no = el("button","btn btn-ghost","Cancelar"); no.type="button";
+          yes.addEventListener("click", function(){
+            VAULT.users = VAULT.users.filter(function(x){ return x !== u; });
+            renderUsers(); doSave();
+          });
+          no.addEventListener("click", function(){ wrap.textContent=""; wrap.append(del); del.focus(); });
+          box.append(yes, no); wrap.append(box); no.focus();
+        });
+        wrap.append(del); li.append(wrap);
+      }
+      ul.append(li);
+    });
+  }
+  $("addUserForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = $("auUser").value.trim(), pw = $("auPass").value, r = $("auRole").value==="admin" ? "admin" : "lector", err = $("auErr");
+    err.textContent = "";
+    if(!USER_RE.test(name)){ err.textContent = "Usa tu correo o un nombre de 3 a 60 caracteres, sin espacios ni tildes."; return; }
+    if(findUser(name)){ err.textContent = "Ya existe un usuario con ese nombre."; return; }
+    if(pw.length < 10){ err.textContent = "La contraseña debe tener al menos 10 caracteres."; return; }
+    var btn = e.submitter || this.querySelector("button[type=submit]"); btn.disabled = true; btn.textContent = "Creando…";
+    wrapFor(name, pw, r, dataKey).then(function(entry){
+      VAULT.users.push(entry); renderUsers(); return doSave();
+    }).then(function(ok){
+      if(!ok){ btn.disabled = false; btn.textContent = "Crear usuario y guardar"; }
+    });
+  });
+  $("pwForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var a = $("pwNew").value, b = $("pwNew2").value, err = $("pwErr");
+    err.textContent = "";
+    if(a.length < 10){ err.textContent = "La contraseña debe tener al menos 10 caracteres."; return; }
+    if(a !== b){ err.textContent = "Las dos contraseñas no coinciden."; return; }
+    var mine = findUser(me);
+    wrapFor(mine.u, a, mine.role, dataKey).then(function(entry){
+      VAULT.users = VAULT.users.map(function(x){ return x===mine ? entry : x; });
+      return doSave();
+    });
+  });
+
+  /* ---------- gate ---------- */
+  function gateView(which, msg){
+    $("gate").hidden = false; $("app").hidden = true;
+    $("gateLogin").hidden = which!=="login";
+    $("gateSetup").hidden = which!=="setup";
+    $("gateMsg").hidden = !msg; $("gateMsg").textContent = msg || "";
+    var f = which==="login" ? $("lgUser") : which==="setup" ? $("suUser") : null;
+    if(f) setTimeout(function(){ f.focus(); }, 0);
+  }
+
+  function unlock(user, raw, ui){
+    return decryptData(raw).then(function(obj){
+      dataKey = raw; me = user.u; role = user.role==="admin" ? "admin" : "lector";
+      state = {};
+      var c = (obj && obj.cierres) || {};
+      Object.keys(c).forEach(function(id){ if(/^[a-z0-9_-]{1,40}$/i.test(id)) state[id] = norm(c[id], id); });
+      saveSession(null);
+      readOnly = role !== "admin";
+      document.body.classList.toggle("readonly", readOnly);
+      enterApp(ui);
+    });
+  }
+
+  function enterApp(ui){
+    $("gate").hidden = true; $("app").hidden = false;
+    $("whoName").textContent = me;
+    $("whoRole").textContent = role==="admin" ? "Administrador" : "Lector";
+    $("tab-usuarios").hidden = role!=="admin";
+    loaded = true;
+    if(ui){
+      if(ui.sel) cal.sel = ui.sel;
+      if(typeof ui.y==="number") cal.y = ui.y;
+      if(typeof ui.m==="number") cal.m = ui.m;
+    }
+    renderAll();
+    if(role==="admin") renderUsers();
+    showView((ui && ui.view) || location.hash.slice(1) || "calendario", true);
+    if(ui && ui.scroll) setTimeout(function(){ window.scrollTo(0, ui.scroll); }, 0);
+    setSave("ok", readOnly ? "Solo lectura" : "Guardado");
+    if(role==="admin"){
+      artifactReady.then(function(ns){
+        if(!ns){
+          readOnly = true; document.body.classList.add("readonly"); setSave("error","Solo lectura");
+          banner("Esta vista no puede guardar cambios (motivo: sin-capacidad"+(window.claude ? "" : ", sin-runtime")+").");
+          renderAll();
+        }
+      });
+    }
+  }
+
+  $("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = $("lgUser").value, pw = $("lgPass").value, err = $("lgErr"), btn = $("lgBtn");
+    err.textContent = "";
+    var user = findUser(name);
+    btn.disabled = true; btn.textContent = "Comprobando…";
+    // Same work whether or not the user exists, so a wrong name and a wrong password look the same.
+    var attempt = user ? unwrap(user, pw).then(function(raw){ return unlock(user, raw, null); })
+                       : pwKey(pw, rand(16), ITER).then(function(){ throw new Error("no"); });
+    attempt.catch(function(){
+      btn.disabled = false; btn.textContent = "Entrar";
+      err.textContent = "Usuario o contraseña incorrectos.";
+      $("lgPass").value = ""; $("lgPass").focus();
+    });
+  });
+
+  $("setupForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = $("suUser").value.trim(), a = $("suPass").value, b = $("suPass2").value, err = $("suErr"), btn = $("suBtn");
+    err.textContent = "";
+    if(!USER_RE.test(name)){ err.textContent = "Usa tu correo o un nombre de 3 a 60 caracteres, sin espacios ni tildes."; return; }
+    if(a.length < 10){ err.textContent = "La contraseña debe tener al menos 10 caracteres."; return; }
+    if(a !== b){ err.textContent = "Las dos contraseñas no coinciden."; return; }
+    btn.disabled = true; btn.textContent = "Creando…";
+    artifactReady.then(function(ns){
+      if(!ns) throw {code:"not_granted"};
+      var raw = rand(32);
+      return wrapFor(name, a, "admin", raw).then(function(entry){
+        dataKey = raw; me = name; role = "admin"; readOnly = false;
+        state = {c1:blank(1), c2:blank(2), c3:blank(3)};
+        VAULT.users = [entry];
+        return encryptState();
+      }).then(function(box){
+        saveSession({view:"calendario"});
+        return ns.publish(buildHtml({v:1, users:VAULT.users, data:box}));
+      });
+    }).then(function(){
+      btn.textContent = "Listo, cargando…";
+    }, function(er){
+      VAULT.users = []; dataKey = null; me = null; role = null; readOnly = true; clearSession();
+      btn.disabled = false; btn.textContent = "Crear administrador";
+      var code = er && er.code;
+      err.textContent = (code==="not_writer"||code==="not_granted"||code==="capability_disabled") ?
+        "Solo el propietario del panel puede configurarlo. Ábrelo desde claude.ai con tu cuenta." :
+        "No se ha podido guardar. Inténtalo de nuevo en unos segundos.";
+    });
+  });
+
+  $("logout").addEventListener("click", function(){
+    var go = function(){ clearSession(); location.hash = ""; location.reload(); };
+    if(unsaved && !readOnly){ doSave().then(go); } else go();
+  });
+
+  /* ---------- start ---------- */
+  function start(){
+    if(!(window.crypto && crypto.subtle)){ gateView(null, "Este navegador no permite abrir el panel. Prueba con una versión reciente de Chrome, Safari, Edge o Firefox."); return; }
+    if(!VAULT.users.length){ gateView("setup"); return; }
+    var s = readSession(), user = s && findUser(s.u);
+    if(user && s.k){
+      unlock(user, fromB64(s.k), s.ui).catch(function(){ clearSession(); gateView("login"); });
+    } else gateView("login");
+  }
+  start();
+
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden && loaded) Object.keys(cards).forEach(refresh); });
+  setInterval(function(){ if(loaded) Object.keys(cards).forEach(refresh); }, 30*60*1000);
+})();
+</script>
+</body>
+</html>
