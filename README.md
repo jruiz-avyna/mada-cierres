@@ -2,6 +2,13 @@
 
 Panel interactivo para seguir la compra de salones de MADA Salones SL: cada salón es un **Cierre** con 4 etapas (carta de intención, propuesta de contrato, fecha de firma y fecha de cierre del traspaso), precios pedido y real, y un calendario mensual con las fechas límite.
 
+Módulos:
+
+- **Calendario**: vista mensual con las fechas límite de todas las etapas.
+- **Cierres**: una tarjeta por salón con sus etapas y precios.
+- **Cuentas**: cuenta de resultados de los últimos 12 meses de cada cierre (ingresos, gastos de personal, de local y de explotación). Calcula totales, IVA (21 % incluido en los ingresos), utilidad, margen y años para recuperar el traspaso. Las cabeceras de los meses son editables y admite pegar bloques desde Excel.
+- **Usuarios** (solo administradores): alta y baja de usuarios del panel.
+
 Publicado como artefacto de Claude: https://claude.ai/artifact/6Q6ubdoKkcAVkMa2BXPdoc
 
 ## Estructura

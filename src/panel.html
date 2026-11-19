@@ -269,6 +269,51 @@ button,input{font:inherit;color:inherit}
 .ok-msg{color:var(--ok);font-size:14px;margin:0;min-height:1.2em}
 select.inp{appearance:auto}
 #gateLogin,#gateSetup{display:flex;flex-direction:column;gap:14px}
+
+/* Cuentas */
+.ct-pick{display:flex;flex-wrap:wrap;gap:8px}
+.ct-chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted)}
+.ct-chip:hover{color:var(--ink);border-color:var(--muted)}
+.ct-chip[aria-checked="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.ct-wrap{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+.ct-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile .v.neg{color:var(--bad)}
+.tile .v.pos{color:var(--ok)}
+.ct-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px}
+.ct-head h2{margin:0}
+.ct-fill{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.ct-fill .field{gap:2px}
+.ct-fill .inp{padding:6px 10px;width:auto}
+.ct-fill .btn{padding:7px 12px}
+.ct-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.ct{border-collapse:separate;border-spacing:0;width:100%;min-width:1260px;font-size:13px;font-variant-numeric:tabular-nums}
+table.ct th,table.ct td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;height:30px}
+table.ct th:last-child,table.ct td:last-child{border-right:none}
+table.ct tr:last-child td,table.ct tr:last-child th{border-bottom:none}
+table.ct thead th{background:var(--ink);color:var(--bg);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}
+table.ct .c-con{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;padding:0 10px;min-width:280px;max-width:320px;font-weight:500;white-space:normal;line-height:1.25}
+table.ct thead .c-con{background:var(--ink);z-index:2}
+table.ct .c-tot{min-width:110px;background:var(--neutral-soft);text-align:right;padding:0 10px;font-weight:700;white-space:nowrap}
+table.ct thead .c-tot{background:var(--ink);text-align:center}
+table.ct td.num{min-width:86px;text-align:right;padding:0 8px;white-space:nowrap}
+.mes{width:100%;min-width:76px;border:none;background:transparent;color:inherit;font:inherit;font-weight:700;text-align:center;padding:6px 4px;text-transform:inherit;letter-spacing:inherit}
+.mes:focus{outline:2px solid var(--accent-soft);outline-offset:-2px;background:rgba(255,255,255,.08)}
+.mes:disabled{opacity:1;-webkit-text-fill-color:currentColor}
+.cell{width:100%;min-width:86px;border:none;background:transparent;font:inherit;text-align:right;padding:6px 8px;color:var(--ink)}
+.cell:hover{background:var(--bg)}
+.cell:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
+.cell.invalid{outline:2px solid var(--bad);outline-offset:-2px}
+.cell:disabled{-webkit-text-fill-color:var(--ink);opacity:1;cursor:default;background:transparent}
+tr.sec th{background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:0 10px}
+tr.sec th.c-con,tr.sec td{background:var(--accent-soft)}
+@media (max-width:600px){table.ct .c-con{min-width:150px;max-width:170px;font-size:12px;padding:0 8px}}
+tr.calc td,tr.calc th{background:var(--neutral-soft);font-weight:700}
+tr.calc.strong td,tr.calc.strong th{background:var(--info-soft);color:var(--info)}
+tr.calc.util td,tr.calc.util th{background:var(--accent);color:var(--surface);font-size:15px;height:40px}
+tr.calc.util th.c-con{font-family:var(--font-display);font-size:18px;letter-spacing:.02em}
+td.neg{color:var(--bad)}
+tr.calc.util td.neg{color:#ffd4d0}
+.ct-empty{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:16px}
 </style>
 </head>
 <body>
@@ -329,6 +374,7 @@ select.inp{appearance:auto}
   <nav class="tabs" role="tablist" aria-label="Vistas">
     <button class="tab" role="tab" id="tab-calendario" aria-controls="view-calendario" aria-selected="true" type="button">Calendario</button>
     <button class="tab" role="tab" id="tab-cierres" aria-controls="view-cierres" aria-selected="false" type="button">Cierres</button>
+    <button class="tab" role="tab" id="tab-cuentas" aria-controls="view-cuentas" aria-selected="false" type="button">Cuentas</button>
     <button class="tab" role="tab" id="tab-usuarios" aria-controls="view-usuarios" aria-selected="false" type="button" hidden>Usuarios</button>
   </nav>
 
@@ -355,6 +401,27 @@ select.inp{appearance:auto}
 
   <section id="view-cierres" role="tabpanel" aria-labelledby="tab-cierres" hidden>
     <div class="grid" id="grid" aria-label="Cierres"></div>
+  </section>
+
+  <section id="view-cuentas" role="tabpanel" aria-labelledby="tab-cuentas" hidden>
+    <div class="ct-wrap">
+      <div class="ct-pick" id="ctPick" role="radiogroup" aria-label="Elige un cierre"></div>
+      <div class="ct-kpis" id="ctKpis"></div>
+      <div class="panel">
+        <div class="ct-head">
+          <div>
+            <h2 id="ctTitle">Cuenta de resultados</h2>
+            <p class="form-note" id="ctSub">Últimos 12 meses. Toca el título de un mes para cambiarlo.</p>
+          </div>
+          <div class="ct-fill" id="ctFill">
+            <div class="field"><label for="ctFirst">Rellenar meses desde</label><input class="inp" id="ctFirst" type="month"></div>
+            <button class="btn btn-ghost" id="ctFillBtn" type="button">Aplicar</button>
+          </div>
+        </div>
+        <div class="ct-scroll" id="ctScroll"><table class="ct" id="ctTable"></table></div>
+        <p class="form-note">Los totales, el IVA (21 % incluido en los ingresos), el total de gastos y la utilidad se calculan solos. Puedes pegar una fila o un bloque copiado de Excel: se rellena hacia la derecha y hacia abajo desde la celda donde pegues.</p>
+      </div>
+    </div>
   </section>
 
   <section id="view-usuarios" role="tabpanel" aria-labelledby="tab-usuarios" hidden>
@@ -420,7 +487,51 @@ select.inp{appearance:auto}
   /* ---------- small helpers ---------- */
   function $(id){ return document.getElementById(id); }
   function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
-  function blank(n){ var d={n:n,salon:"",pedido:null,real:null}; ETAPAS.forEach(function(s){ d[s.k]={hecho:false,fecha:""}; }); return d; }
+  /* Cuentas: filas de la cuenta de resultados de cada cierre */
+  var CT_ROWS = [
+    {sec:"Ingresos"},
+    {k:"serv", t:"Facturación de servicios de peluquería", g:"ing"},
+    {k:"prod", t:"Venta de producto a cliente final", g:"ing"},
+    {k:"oing", t:"Otros ingresos (alquiler de sillón, colaboraciones)", g:"ing"},
+    {calc:"ing", t:"Total ingresos"},
+    {calc:"iva", t:"IVA (21 % incluido)"},
+    {calc:"neto", t:"Total ingresos netos", cls:"strong"},
+    {sec:"Gastos de personal"},
+    {k:"sal", t:"Salarios empleados (importe bruto)", g:"gas"},
+    {k:"ss", t:"Seguridad Social a cargo de la empresa", g:"gas"},
+    {sec:"Gastos de local"},
+    {k:"alq", t:"Alquiler", g:"gas"},
+    {k:"luz", t:"Electricidad", g:"gas"},
+    {k:"agua", t:"Agua", g:"gas"},
+    {k:"bas", t:"Basuras y comunidad", g:"gas"},
+    {k:"tel", t:"Internet y telefonía", g:"gas"},
+    {sec:"Gastos de explotación"},
+    {k:"compra", t:"Compra de producto a proveedores", g:"gas"},
+    {k:"soft", t:"Software de gestión del salón", g:"gas"},
+    {k:"gest", t:"Gestoría y asesoría", g:"gas"},
+    {k:"seg", t:"Seguros", g:"gas"},
+    {k:"tpv", t:"Comisiones de TPV y medios de pago", g:"gas"},
+    {k:"mant", t:"Mantenimiento y reparaciones", g:"gas"},
+    {k:"ogas", t:"Otros gastos", g:"gas"},
+    {calc:"gas", t:"Total gastos", cls:"strong"},
+    {calc:"util", t:"Utilidad", cls:"util"}
+  ];
+  var CT_KEYS = CT_ROWS.filter(function(r){ return r.k; }).map(function(r){ return r.k; });
+  var MES_CORTO = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  function mesesDesde(y, m){ var out=[]; for(var i=0;i<12;i++){ var mm=(m+i)%12, yy=y+Math.floor((m+i)/12); out.push(MES_CORTO[mm]+"-"+String(yy).slice(-2)); } return out; }
+  function mesesPorDefecto(){ var t=new Date(); var m=t.getMonth()-12, y=t.getFullYear(); if(m<0){ m+=12; y--; } return mesesDesde(y, m); }
+  function blankCuentas(){ var v={}; CT_KEYS.forEach(function(k){ v[k]=[null,null,null,null,null,null,null,null,null,null,null,null]; }); return {meses:mesesPorDefecto(), v:v}; }
+  function normCuentas(raw){
+    var c = blankCuentas();
+    if(!raw || typeof raw!=="object") return c;
+    if(Array.isArray(raw.meses)) for(var i=0;i<12;i++){ if(typeof raw.meses[i]==="string") c.meses[i] = raw.meses[i].slice(0,16); }
+    if(raw.v && typeof raw.v==="object") CT_KEYS.forEach(function(k){
+      var a = raw.v[k]; if(!Array.isArray(a)) return;
+      for(var i=0;i<12;i++){ var x=a[i]; c.v[k][i] = (typeof x==="number" && isFinite(x)) ? x : null; }
+    });
+    return c;
+  }
+  function blank(n){ var d={n:n,salon:"",pedido:null,real:null}; ETAPAS.forEach(function(s){ d[s.k]={hecho:false,fecha:""}; }); d.cuentas=blankCuentas(); return d; }
   function norm(raw, id){
     var d = blank(Number(raw && raw.n) || Number(String(id).replace(/\D/g,"")) || 0);
     if(!raw) return d;
@@ -431,6 +542,7 @@ select.inp{appearance:auto}
       var e = raw[s.k] || {};
       d[s.k] = {hecho: e.hecho===true, fecha: (typeof e.fecha==="string" && /^\d{4}-\d{2}-\d{2}$/.test(e.fecha)) ? e.fecha : ""};
     });
+    d.cuentas = normCuentas(raw.cuentas);
     return d;
   }
   function daysUntil(iso){
@@ -537,8 +649,14 @@ select.inp{appearance:auto}
     clearTimeout(saveTimer); saveTimer = setTimeout(trySave, 4000);
   }
   function typingNow(){ var a=document.activeElement; return !!(a && a.tagName==="INPUT" && (a.type==="text" || a.type==="password" || a.classList.contains("money"))); }
-  function trySave(){ if(typingNow()){ saveTimer = setTimeout(trySave, 1500); return; } doSave(); }
-  function uiState(){ return {view:currentView, sel:cal.sel, y:cal.y, m:cal.m, scroll:window.scrollY}; }
+  var lastInputAt = 0;
+  document.addEventListener("input", function(){ lastInputAt = Date.now(); }, true);
+  function trySave(){ if(typingNow() && Date.now()-lastInputAt < 8000){ saveTimer = setTimeout(trySave, 1500); return; } doSave(); }
+  function uiState(){
+    var a = document.activeElement, sc = $("ctScroll");
+    return {view:currentView, sel:cal.sel, y:cal.y, m:cal.m, scroll:window.scrollY, ct:ctSel,
+            ctx: sc ? sc.scrollLeft : 0, focus: (a && a.id && /^(ct-|mes-)/.test(a.id)) ? a.id : null};
+  }
   function doSave(){
     if(saving || readOnly) return Promise.resolve(false);
     clearTimeout(saveTimer);
@@ -713,6 +831,7 @@ select.inp{appearance:auto}
     }
     $("addTop").hidden = readOnly;
     renderSummary();
+    renderCuentas();
   }
 
   function renderSummary(){
@@ -731,7 +850,7 @@ select.inp{appearance:auto}
     $("sAlert").textContent = alert;
     $("tAlert").classList.toggle("alert", alert>0);
     $("sReal").textContent = hasReal ? EUR.format(real) : "–";
-    $("sPedido").textContent = hasPed ? "Pedido: "+EUR.format(pedido) : "Sin precios todavía";
+    $("sPedido").textContent = hasPed ? "Pedido: "+EUR.format(pedido) : (hasReal ? "Sin precio pedido" : "Sin precios todavía");
     $("sAhorro").textContent = base ? EUR.format(ahorro) : "–";
     $("sAhorroPct").textContent = base ? String(Math.round(ahorro/base*1000)/10).replace(".",",")+" % sobre lo pedido" : "Con precio pedido y real";
     if(best){
@@ -740,6 +859,7 @@ select.inp{appearance:auto}
       $("sNextWhat").textContent = "Cierre "+best.d.n+(best.d.salon?" · "+best.d.salon:"")+" · "+ETAPAS[best.st.nextIdx].short+" · "+(dd<0?"vencida hace "+(-dd)+" d":dd===0?"hoy":"en "+dd+" d");
     } else { $("sNext").textContent = "–"; $("sNextWhat").textContent = "Pon fechas límite en las etapas pendientes"; }
     renderCalendar();
+    renderCuentas();
   }
 
   /* ---------- calendar ---------- */
@@ -859,11 +979,11 @@ select.inp{appearance:auto}
 
   /* ---------- tabs ---------- */
   var currentView = "calendario";
-  function views(){ return role==="admin" ? ["calendario","cierres","usuarios"] : ["calendario","cierres"]; }
+  function views(){ return role==="admin" ? ["calendario","cierres","cuentas","usuarios"] : ["calendario","cierres","cuentas"]; }
   function showView(name, fromHash){
     var vs = views(); if(vs.indexOf(name)<0) name = "calendario";
     currentView = name;
-    ["calendario","cierres","usuarios"].forEach(function(v){
+    ["calendario","cierres","cuentas","usuarios"].forEach(function(v){
       var on = v===name;
       $("tab-"+v).setAttribute("aria-selected", on ? "true" : "false");
       $("tab-"+v).tabIndex = on ? 0 : -1;
@@ -871,7 +991,7 @@ select.inp{appearance:auto}
     });
     if(!fromHash){ try{ history.replaceState(null,"","#"+name); }catch(e){ location.hash = name; } }
   }
-  ["calendario","cierres","usuarios"].forEach(function(v){
+  ["calendario","cierres","cuentas","usuarios"].forEach(function(v){
     var t = $("tab-"+v);
     t.addEventListener("click", function(){ showView(v); });
     t.addEventListener("keydown", function(ev){
@@ -888,6 +1008,185 @@ select.inp{appearance:auto}
     c.el.scrollIntoView({block:"start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
     c.el.classList.remove("flash"); void c.el.offsetWidth; c.el.classList.add("flash");
   }
+
+  /* ---------- Cuentas ---------- */
+  var ctSel = null, ctBuiltKey = "", ctCells = {}, ctCalcCells = {}, ctTotCells = {};
+  var NF2 = new Intl.NumberFormat("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:"always"});
+  function fmt2(v){ return v==null ? "" : NF2.format(v); }
+  function r2(v){ return Math.round(v*100)/100; }
+  function parseNum(s){
+    s = String(s==null?"":s).replace(/[€\s ]/g,"");
+    if(!s || s==="-") return {ok:true, v:null};
+    if(s.indexOf(",")>=0) s = s.replace(/\./g,"").replace(",",".");
+    else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,"");
+    var v = Number(s);
+    return isFinite(v) ? {ok:true, v:r2(v)} : {ok:false};
+  }
+  function ctCalc(c){
+    var out = {ing:[], iva:[], neto:[], gas:[], util:[], has:[]};
+    for(var i=0;i<12;i++){
+      var ing=0, gas=0, any=false;
+      CT_ROWS.forEach(function(r){ if(!r.k) return; var x=c.v[r.k][i]; if(x!=null){ any=true; if(r.g==="ing") ing+=x; else gas+=x; } });
+      var iva = r2(ing - ing/1.21), neto = r2(ing - iva);
+      out.ing.push(r2(ing)); out.iva.push(iva); out.neto.push(neto); out.gas.push(r2(gas)); out.util.push(r2(neto-gas)); out.has.push(any);
+    }
+    return out;
+  }
+  /* Como en la hoja original: el IVA anual se calcula sobre el total del año, no sumando los meses redondeados. */
+  function ctAnnual(res){
+    var ing = sum12(res.ing), gas = sum12(res.gas), iva = r2(ing - ing/1.21), neto = r2(ing - iva);
+    return {ing:ing, iva:iva, neto:neto, gas:gas, util:r2(neto-gas)};
+  }
+  function sum12(a){ var t=0; a.forEach(function(x){ if(x!=null) t+=x; }); return r2(t); }
+  function ctLabel(d){ return "Cierre "+d.n+(d.salon ? " · "+d.salon : ""); }
+
+  function renderCuentas(){
+    if(!loaded) return;
+    var ids = sortedIds(), pick = $("ctPick");
+    if(!ids.length){
+      pick.textContent = ""; $("ctKpis").textContent = ""; $("ctTable").textContent = "";
+      $("ctTitle").textContent = "Cuenta de resultados"; $("ctSub").textContent = "Añade un cierre para registrar sus cuentas.";
+      ctBuiltKey = ""; return;
+    }
+    if(!state[ctSel]) ctSel = ids[0];
+    // selector
+    var keep = document.activeElement && document.activeElement.classList.contains("ct-chip") ? document.activeElement.dataset.id : null;
+    pick.textContent = "";
+    ids.forEach(function(id){
+      var b = el("button","ct-chip", ctLabel(state[id])); b.type="button"; b.dataset.id=id;
+      b.setAttribute("role","radio"); b.setAttribute("aria-checked", id===ctSel ? "true" : "false");
+      b.tabIndex = id===ctSel ? 0 : -1;
+      b.addEventListener("click", function(){ ctSel = id; renderCuentas(); });
+      b.addEventListener("keydown", function(ev){
+        if(ev.key!=="ArrowRight" && ev.key!=="ArrowLeft") return;
+        var i = ids.indexOf(id), nx = ids[(i+(ev.key==="ArrowRight"?1:ids.length-1))%ids.length];
+        ctSel = nx; renderCuentas(); var f = pick.querySelector('[data-id="'+nx+'"]'); if(f) f.focus(); ev.preventDefault();
+      });
+      pick.append(b);
+    });
+    if(keep){ var f = pick.querySelector('[data-id="'+keep+'"]'); if(f) f.focus(); }
+    $("ctTitle").textContent = "Cuenta de resultados · " + ctLabel(state[ctSel]);
+    $("ctSub").textContent = readOnly ? "Últimos 12 meses." : "Últimos 12 meses. Toca el título de un mes para cambiarlo.";
+    $("ctFill").hidden = readOnly;
+    var key = ctSel+"|"+readOnly;
+    if(key !== ctBuiltKey) ctBuildTable();
+    ctUpdate();
+  }
+
+  function ctBuildTable(){
+    var d = state[ctSel], c = d.cuentas, tbl = $("ctTable");
+    ctBuiltKey = ctSel+"|"+readOnly; ctCells = {}; ctCalcCells = {}; ctTotCells = {};
+    tbl.textContent = "";
+    var thead = el("thead"), hr = el("tr");
+    hr.append(el("th","c-con","Concepto"));
+    c.meses.forEach(function(m, i){
+      var th = el("th"), inp = el("input","mes"); inp.type="text"; inp.id="mes-"+i; inp.value=m; inp.maxLength=16;
+      inp.setAttribute("aria-label","Mes de la columna "+(i+1)); inp.disabled = readOnly; inp.autocomplete="off";
+      inp.addEventListener("input", function(){ state[ctSel].cuentas.meses[i] = inp.value.trim(); markDirty(); });
+      inp.addEventListener("blur", flushSoon);
+      th.append(inp); hr.append(th);
+    });
+    hr.append(el("th","c-tot","Total año"));
+    thead.append(hr); tbl.append(thead);
+    var tb = el("tbody"), editRow = 0;
+    CT_ROWS.forEach(function(r){
+      var tr = el("tr");
+      if(r.sec){ tr.className="sec"; var th=el("th","c-con",r.sec); var fill=el("td"); fill.colSpan=13; tr.append(th, fill); tb.append(tr); return; }
+      if(r.calc){
+        tr.className = "calc "+(r.cls||"");
+        tr.append(el("th","c-con",r.t)); ctCalcCells[r.calc] = [];
+        for(var i=0;i<12;i++){ var td=el("td","num"); tr.append(td); ctCalcCells[r.calc].push(td); }
+        var tt = el("td","c-tot"); tr.append(tt); ctTotCells[r.calc] = tt; tb.append(tr); return;
+      }
+      var th = el("th","c-con",r.t); th.scope="row"; tr.append(th); ctCells[r.k] = [];
+      var ri = editRow++;
+      for(var j=0;j<12;j++){
+        (function(k, j, ri){
+          var td = el("td"), inp = el("input","cell"); inp.type="text"; inp.inputMode="decimal"; inp.autocomplete="off";
+          inp.id = "ct-"+k+"-"+j; inp.dataset.r = ri; inp.dataset.c = j; inp.disabled = readOnly;
+          inp.setAttribute("aria-label", r.t+", "+(state[ctSel].cuentas.meses[j]||("mes "+(j+1))));
+          inp.addEventListener("focus", function(){ var v=state[ctSel].cuentas.v[k][j]; inp.value = v==null ? "" : String(v).replace(".",","); inp.select(); });
+          inp.addEventListener("input", function(){
+            var p = parseNum(inp.value); inp.classList.toggle("invalid", !p.ok);
+            if(p.ok){ state[ctSel].cuentas.v[k][j] = p.v; ctUpdate(true); markDirty(); }
+          });
+          inp.addEventListener("blur", function(){
+            var p = parseNum(inp.value); inp.classList.toggle("invalid", !p.ok);
+            if(p.ok) inp.value = fmt2(state[ctSel].cuentas.v[k][j]);
+            flushSoon();
+          });
+          inp.addEventListener("keydown", function(ev){
+            if(ev.key!=="Enter") return; ev.preventDefault();
+            var nx = tbl.querySelector('.cell[data-r="'+(ri+(ev.shiftKey?-1:1))+'"][data-c="'+j+'"]'); if(nx) nx.focus(); else inp.blur();
+          });
+          inp.addEventListener("paste", function(ev){
+            var txt = (ev.clipboardData || window.clipboardData).getData("text");
+            if(!txt || !/[\t\n]/.test(txt.replace(/\s+$/,""))) return;
+            ev.preventDefault();
+            var rows = txt.replace(/\r/g,"").replace(/\n+$/,"").split("\n");
+            var cc = state[ctSel].cuentas, bad = 0;
+            rows.forEach(function(line, dr){
+              var key = CT_KEYS[ri+dr]; if(!key) return;
+              line.split("\t").forEach(function(cell, dc){
+                var col = j+dc; if(col>11) return;
+                var p = parseNum(cell); if(p.ok) cc.v[key][col] = p.v; else bad++;
+              });
+            });
+            ctBuildTable(); ctUpdate(); markDirty();
+            var back = $(inp.id); if(back) back.focus();
+            if(bad) banner("Se han pegado los datos. "+bad+(bad===1?" celda no era un número y se ha dejado":" celdas no eran números y se han dejado")+" como estaban.");
+          });
+          td.append(inp); tr.append(td); ctCells[k].push(inp);
+        })(r.k, j, ri);
+      }
+      var tt = el("td","c-tot"); tr.append(tt); ctTotCells[r.k] = tt;
+      tb.append(tr);
+    });
+    tbl.append(tb);
+  }
+
+  function ctUpdate(fromTyping){
+    var d = state[ctSel]; if(!d || !ctBuiltKey) return;
+    var c = d.cuentas, res = ctCalc(c);
+    CT_KEYS.forEach(function(k){
+      ctCells[k].forEach(function(inp, j){ if(document.activeElement!==inp){ inp.value = fmt2(c.v[k][j]); inp.classList.remove("invalid"); } });
+      var t = sum12(c.v[k]); ctTotCells[k].textContent = c.v[k].some(function(x){ return x!=null; }) ? fmt2(t)+" €" : "";
+    });
+    ["ing","iva","neto","gas","util"].forEach(function(k){
+      ctCalcCells[k].forEach(function(td, j){
+        var v = res[k][j]; td.textContent = res.has[j] ? fmt2(v) : ""; td.classList.toggle("neg", res.has[j] && v<0);
+      });
+      var tot = ctAnnual(res)[k], anyM = res.has.some(Boolean);
+      ctTotCells[k].textContent = anyM ? fmt2(tot)+" €" : ""; ctTotCells[k].classList.toggle("neg", anyM && tot<0);
+    });
+    if(!fromTyping) c.meses.forEach(function(m,i){ var h=$("mes-"+i); if(h && document.activeElement!==h) h.value = m; });
+    ctKpis(d, res);
+  }
+
+  function ctKpis(d, res){
+    var box = $("ctKpis"); box.textContent = "";
+    var meses = res.has.filter(Boolean).length;
+    var an = ctAnnual(res), neto = an.neto, gas = an.gas, util = an.util;
+    function tile(k, v, s, cls){ var t=el("div","tile"); t.append(el("span","k",k)); var vv=el("span","v",v); if(cls) vv.classList.add(cls); t.append(vv, el("span","s",s)); box.append(t); }
+    if(!meses){ tile("Datos registrados","0 meses","Rellena la tabla para ver el resumen"); return; }
+    tile("Ingresos netos", EUR.format(neto), meses===12 ? "12 meses" : meses+" de 12 meses con datos");
+    tile("Gastos", EUR.format(gas), "Media "+EUR.format(gas/meses)+" al mes");
+    tile("Utilidad", EUR.format(util), "Media "+EUR.format(util/meses)+" al mes", util<0 ? "neg" : "pos");
+    tile("Margen", neto ? String(Math.round(util/neto*1000)/10).replace(".",",")+" %" : "–", "Utilidad sobre ingresos netos", util<0 ? "neg" : null);
+    var precio = d.real!=null ? d.real : d.pedido, anual = util/meses*12;
+    if(precio!=null){
+      var pay = anual>0 ? precio/anual : null;
+      tile("Recuperación del traspaso", pay ? String(Math.round(pay*10)/10).replace(".",",")+" años" : "No se recupera",
+           (d.real!=null ? "Con el traspaso real (" : "Con el traspaso pedido (")+EUR.format(precio)+")", pay ? null : "neg");
+    }
+  }
+
+  $("ctFillBtn").addEventListener("click", function(){
+    var v = $("ctFirst").value; if(!/^\d{4}-\d{2}$/.test(v) || !state[ctSel]) { $("ctFirst").focus(); return; }
+    var p = v.split("-").map(Number);
+    state[ctSel].cuentas.meses = mesesDesde(p[0], p[1]-1);
+    ctUpdate(); markDirty(); flushSoon();
+  });
 
   function nextN(){ var m=0; Object.keys(state).forEach(function(id){ m=Math.max(m,state[id].n||0); }); return m+1; }
   function addCierre(){
@@ -991,11 +1290,16 @@ select.inp{appearance:auto}
       if(ui.sel) cal.sel = ui.sel;
       if(typeof ui.y==="number") cal.y = ui.y;
       if(typeof ui.m==="number") cal.m = ui.m;
+      if(ui.ct) ctSel = ui.ct;
     }
     renderAll();
     if(role==="admin") renderUsers();
     showView((ui && ui.view) || location.hash.slice(1) || "calendario", true);
-    if(ui && ui.scroll) setTimeout(function(){ window.scrollTo(0, ui.scroll); }, 0);
+    if(ui) setTimeout(function(){
+      if(ui.scroll) window.scrollTo(0, ui.scroll);
+      if(ui.ctx && $("ctScroll")) $("ctScroll").scrollLeft = ui.ctx;
+      if(ui.focus && $(ui.focus) && !$(ui.focus).disabled){ $(ui.focus).focus({preventScroll:true}); }
+    }, 0);
     setSave("ok", readOnly ? "Solo lectura" : "Guardado");
     if(role==="admin"){
       artifactReady.then(function(ns){
