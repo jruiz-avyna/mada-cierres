@@ -94,6 +94,9 @@ button,input{font:inherit;color:inherit}
 .card[data-st="warn"]::before{background:var(--warn)}
 .card[data-st="bad"]::before{background:var(--bad)}
 .card[data-st="info"]::before{background:var(--info)}
+.card[data-st="drop"]::before{background:var(--muted)}
+.card.is-caido{background:var(--bg)}
+.card.is-caido .progress,.card.is-caido .prices,.card.is-caido .stages{opacity:.55}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
 .pill{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;background:var(--neutral-soft);color:var(--neutral)}
@@ -101,6 +104,23 @@ button,input{font:inherit;color:inherit}
 .pill[data-st="warn"]{background:var(--warn-soft);color:var(--warn)}
 .pill[data-st="bad"]{background:var(--bad-soft);color:var(--bad)}
 .pill[data-st="info"]{background:var(--info-soft);color:var(--info)}
+.pill[data-st="drop"]{background:var(--ink);color:var(--bg)}
+.drop{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:8px}
+.drop.is-on{border-color:var(--muted);background:var(--neutral-soft)}
+.drop h4{margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.drop .row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.drop textarea{flex:1 1 180px;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:7px 10px;font:inherit;font-size:14px;color:var(--ink)}
+.drop textarea:focus{border-color:var(--accent);outline:none}
+.drop textarea:read-only{background:transparent;border-color:transparent;padding-left:0;resize:none}
+.drop .date-wrap{flex-direction:column;align-items:flex-start;gap:3px}
+.drop .acts{display:flex;gap:8px;flex-wrap:wrap}
+.drop .acts .btn{padding:6px 12px;font-size:13px}
+.drop .form-err{font-size:13px}
+.drop .form-err:empty{display:none}
+.card.is-caido .stages .chip{display:none}
+.drop-btn{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px 4px;border-radius:6px}
+.drop-btn:hover{color:var(--ink);text-decoration:underline}
+.foot-acts{display:flex;align-items:center;gap:4px;white-space:nowrap}
 .salon{width:100%;border:1px solid transparent;border-radius:8px;background:transparent;padding:4px 6px;margin:-6px 0 -4px -6px;font-family:var(--font-display);font-size:21px;font-weight:700;line-height:1.2}
 .salon::placeholder{color:var(--muted);opacity:.7;font-weight:500}
 .salon:hover{border-color:var(--line)}
@@ -364,7 +384,7 @@ tr.calc.util td.neg{color:#ffd4d0}
   <div class="banner" id="banner" role="status"></div>
 
   <section class="summary" id="summary" aria-label="Resumen">
-    <div class="tile"><span class="k">Cierres</span><span class="v" id="sCount">–</span><span class="s" id="sDone">–</span></div>
+    <div class="tile"><span class="k">Cierres activos</span><span class="v" id="sCount">–</span><span class="s" id="sDone">–</span></div>
     <div class="tile" id="tAlert"><span class="k">Requieren atención</span><span class="v" id="sAlert">–</span><span class="s">Vencidos o en ≤7 días</span></div>
     <div class="tile"><span class="k">Traspaso real total</span><span class="v" id="sReal">–</span><span class="s" id="sPedido">–</span></div>
     <div class="tile"><span class="k">Ahorro negociado</span><span class="v" id="sAhorro">–</span><span class="s" id="sAhorroPct">–</span></div>
@@ -531,7 +551,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     });
     return c;
   }
-  function blank(n){ var d={n:n,salon:"",pedido:null,real:null}; ETAPAS.forEach(function(s){ d[s.k]={hecho:false,fecha:""}; }); d.cuentas=blankCuentas(); return d; }
+  function blank(n){ var d={n:n,salon:"",pedido:null,real:null}; ETAPAS.forEach(function(s){ d[s.k]={hecho:false,fecha:""}; }); d.cuentas=blankCuentas(); d.caido=null; return d; }
   function norm(raw, id){
     var d = blank(Number(raw && raw.n) || Number(String(id).replace(/\D/g,"")) || 0);
     if(!raw) return d;
@@ -543,6 +563,10 @@ tr.calc.util td.neg{color:#ffd4d0}
       d[s.k] = {hecho: e.hecho===true, fecha: (typeof e.fecha==="string" && /^\d{4}-\d{2}-\d{2}$/.test(e.fecha)) ? e.fecha : ""};
     });
     d.cuentas = normCuentas(raw.cuentas);
+    if(raw.caido && typeof raw.caido==="object") d.caido = {
+      fecha: (typeof raw.caido.fecha==="string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.caido.fecha)) ? raw.caido.fecha : "",
+      motivo: typeof raw.caido.motivo==="string" ? raw.caido.motivo.slice(0,1000) : ""
+    };
     return d;
   }
   function daysUntil(iso){
@@ -569,6 +593,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     return {st:"info", t:"Faltan "+d+" días"};
   }
   function status(d){
+    if(d.caido) return {done: ETAPAS.filter(function(s){ return d[s.k].hecho; }).length, nextIdx:-1, st:"drop", label:"Caído", caido:true};
     var done = ETAPAS.filter(function(s){ return d[s.k].hecho; }).length;
     var nextIdx = -1;
     for(var i=0;i<ETAPAS.length;i++){ if(!d[ETAPAS[i].k].hecho){ nextIdx=i; break; } }
@@ -648,7 +673,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     unsaved = true; setSave("saving","Cambios sin guardar");
     clearTimeout(saveTimer); saveTimer = setTimeout(trySave, 4000);
   }
-  function typingNow(){ var a=document.activeElement; return !!(a && a.tagName==="INPUT" && (a.type==="text" || a.type==="password" || a.classList.contains("money"))); }
+  function typingNow(){ var a=document.activeElement; return !!(a && (a.tagName==="TEXTAREA" || a.tagName==="INPUT" && (a.type==="text" || a.type==="password" || a.classList.contains("money")))); }
   var lastInputAt = 0;
   document.addEventListener("input", function(){ lastInputAt = Date.now(); }, true);
   function trySave(){ if(typingNow() && Date.now()-lastInputAt < 8000){ saveTimer = setTimeout(trySave, 1500); return; } doSave(); }
@@ -748,13 +773,50 @@ tr.calc.util td.neg{color:#ffd4d0}
       stageRefs.push({li:li, chk:chk, date:date, chip:chip});
     });
 
-    var foot = el("div","card-foot"), next = el("div","next-step"), delWrap = el("div");
+    /* Cierre caído: motivo y fecha */
+    var drop = el("div","drop"); drop.hidden = true;
+    var dropH = el("h4");
+    var dropRow = el("div","row");
+    var motivo = el("textarea"); motivo.id = "motivo-"+id; motivo.maxLength = 1000; motivo.rows = 3;
+    motivo.placeholder = "Explica brevemente por qué se ha caído (precio, local, condiciones del vendedor…)";
+    motivo.setAttribute("aria-label","Motivo por el que se ha caído el cierre");
+    var dfw = el("label","date-wrap"); dfw.append(document.createTextNode("Fecha en que se cayó"));
+    var dfecha = el("input","date"); dfecha.type="date"; dfecha.id="caido-f-"+id; dfw.append(dfecha);
+    dropRow.append(motivo, dfw);
+    var dropErr = el("p","form-err"); dropErr.setAttribute("role","alert");
+    var acts = el("div","acts");
+    var dConfirm = el("button","btn btn-danger","Confirmar que se ha caído"); dConfirm.type="button";
+    var dCancel = el("button","btn btn-ghost","Cancelar"); dCancel.type="button";
+    var dReact = el("button","btn btn-ghost","Reactivar cierre"); dReact.type="button";
+    acts.append(dConfirm, dCancel, dReact);
+    drop.append(dropH, dropRow, dropErr, acts);
+    var dropOpen = false;
+
+    var dropBtn = el("button","drop-btn","Marcar como caído"); dropBtn.type="button";
+    dropBtn.addEventListener("click", function(){
+      dropOpen = true; motivo.value = ""; dfecha.value = isoOf(new Date()); dropErr.textContent = "";
+      refresh(id); motivo.focus();
+    });
+    dCancel.addEventListener("click", function(){ dropOpen = false; refresh(id); dropBtn.focus(); });
+    dConfirm.addEventListener("click", function(){
+      var m = motivo.value.trim();
+      if(!m){ dropErr.textContent = "Escribe el motivo antes de confirmar."; motivo.focus(); return; }
+      state[id].caido = {fecha: dfecha.value || isoOf(new Date()), motivo: m};
+      dropOpen = false; renderAll(); markDirty(); flushSoon();
+    });
+    dReact.addEventListener("click", function(){ state[id].caido = null; renderAll(); markDirty(); flushSoon(); });
+    motivo.addEventListener("input", function(){ if(state[id].caido){ state[id].caido.motivo = motivo.value; markDirty(); } });
+    motivo.addEventListener("blur", function(){ if(state[id].caido) flushSoon(); });
+    dfecha.addEventListener("change", function(){ if(state[id].caido && dfecha.value){ state[id].caido.fecha = dfecha.value; refresh(id); markDirty(); } });
+
+    var foot = el("div","card-foot"), next = el("div","next-step"), delWrap = el("div","foot-acts");
     var del = el("button","del","Eliminar"); del.type="button";
     del.addEventListener("click", function(){ askDelete(id, delWrap, del); });
-    delWrap.append(del); foot.append(next, delWrap);
+    delWrap.append(dropBtn, del); foot.append(next, delWrap);
 
-    c.append(head, salon, prog, prices, ol, foot);
-    return {el:c, eyebrow:eyebrow, pill:pill, salon:salon, segs:segEls, plbl:plbl, pedido:mp.inp, real:mr.inp, diff:diff, diffL:diffL, diffV:diffV, stages:stageRefs, next:next, del:del};
+    c.append(head, salon, drop, prog, prices, ol, foot);
+    return {el:c, eyebrow:eyebrow, pill:pill, salon:salon, segs:segEls, plbl:plbl, pedido:mp.inp, real:mr.inp, diff:diff, diffL:diffL, diffV:diffV, stages:stageRefs, next:next, del:del,
+            drop:drop, dropH:dropH, motivo:motivo, dfecha:dfecha, dConfirm:dConfirm, dCancel:dCancel, dReact:dReact, dropBtn:dropBtn, dropErr:dropErr, isDropOpen:function(){ return dropOpen; }};
   }
 
   function askDelete(id, wrap, del){
@@ -766,7 +828,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     var yes = el("button","btn btn-danger","Eliminar"); yes.type="button";
     var no = el("button","btn btn-ghost","Cancelar"); no.type="button";
     yes.addEventListener("click", function(){ delete state[id]; renderAll(); markDirty(); clearTimeout(saveTimer); doSave(); });
-    no.addEventListener("click", function(){ wrap.textContent=""; wrap.append(del); del.focus(); });
+    no.addEventListener("click", function(){ wrap.textContent=""; if(cards[id]) wrap.append(cards[id].dropBtn); wrap.append(del); del.focus(); });
     box.append(yes, no); wrap.append(box); no.focus();
   }
 
@@ -795,12 +857,29 @@ tr.calc.util td.neg{color:#ffd4d0}
       var ch = dateChip(e); sr.chip.dataset.st = ch.st; sr.chip.textContent = ch.t;
       sr.li.classList.toggle("done", e.hecho);
       sr.li.classList.toggle("current", i===st.nextIdx);
+      sr.chk.disabled = readOnly || !!d.caido; sr.date.disabled = readOnly || !!d.caido;
     });
+    var cai = d.caido, open = r.isDropOpen() && !cai;
+    r.el.classList.toggle("is-caido", !!cai);
+    r.drop.hidden = !cai && !open;
+    r.drop.classList.toggle("is-on", !!cai);
+    r.dropH.textContent = cai ? "Cierre caído" + (cai.fecha ? " el " + fmtDate(cai.fecha) : "") : "¿Por qué se ha caído este cierre?";
+    if(cai){
+      if(document.activeElement !== r.motivo) r.motivo.value = cai.motivo;
+      if(document.activeElement !== r.dfecha) r.dfecha.value = cai.fecha;
+    }
+    r.motivo.readOnly = readOnly; r.dfecha.disabled = readOnly;
+    r.dfecha.parentNode.hidden = readOnly && !!cai;
+    r.dConfirm.hidden = !open; r.dCancel.hidden = !open;
+    r.dReact.hidden = !cai || readOnly;
+    r.dropBtn.hidden = readOnly || !!cai || open;
+    if(!open) r.dropErr.textContent = "";
     r.salon.readOnly = readOnly; r.pedido.readOnly = readOnly; r.real.readOnly = readOnly;
     if(readOnly && !d.salon) r.salon.placeholder = "Salón sin nombre";
     r.del.hidden = readOnly;
     r.next.textContent = "";
-    if(st.nextIdx<0) r.next.append(document.createTextNode("Traspaso cerrado"));
+    if(st.caido) r.next.append(document.createTextNode("No se hará el traspaso"));
+    else if(st.nextIdx<0) r.next.append(document.createTextNode("Traspaso cerrado"));
     else {
       r.next.append(document.createTextNode("Siguiente: "), el("b",null,ETAPAS[st.nextIdx].short));
       if(st.fecha) r.next.append(document.createTextNode(" · "+fmtDate(st.fecha)));
@@ -812,7 +891,7 @@ tr.calc.util td.neg{color:#ffd4d0}
 
   function renderAll(){
     if(!loaded) return;
-    var ids = sortedIds();
+    var ids = sortedIds().sort(function(a,b){ return (state[a].caido?1:0) - (state[b].caido?1:0); });
     Object.keys(cards).forEach(function(id){ if(!state[id]){ cards[id].el.remove(); delete cards[id]; } });
     grid.querySelectorAll(".skeleton,.empty,.add-card").forEach(function(n){ n.remove(); });
     ids.forEach(function(id, i){
@@ -835,9 +914,10 @@ tr.calc.util td.neg{color:#ffd4d0}
   }
 
   function renderSummary(){
-    var ids = sortedIds(), done=0, alert=0, real=0, pedido=0, ahorro=0, base=0, hasReal=false, hasPed=false, best=null;
+    var ids = sortedIds(), done=0, alert=0, real=0, pedido=0, ahorro=0, base=0, hasReal=false, hasPed=false, best=null, caidos=0;
     ids.forEach(function(id){
       var d = state[id], st = status(d);
+      if(d.caido){ caidos++; return; }
       if(st.nextIdx<0) done++;
       if(st.st==="bad" || st.st==="warn") alert++;
       if(d.real!=null){ real+=d.real; hasReal=true; }
@@ -845,8 +925,8 @@ tr.calc.util td.neg{color:#ffd4d0}
       if(d.real!=null && d.pedido!=null){ ahorro += d.pedido-d.real; base += d.pedido; }
       if(st.fecha && (!best || st.fecha < best.fecha)) best = {fecha:st.fecha, d:d, st:st};
     });
-    $("sCount").textContent = ids.length;
-    $("sDone").textContent = done+" completado"+(done===1?"":"s");
+    $("sCount").textContent = ids.length - caidos;
+    $("sDone").textContent = done+" completado"+(done===1?"":"s") + (caidos ? " · "+caidos+" caído"+(caidos===1?"":"s") : "");
     $("sAlert").textContent = alert;
     $("tAlert").classList.toggle("alert", alert>0);
     $("sReal").textContent = hasReal ? EUR.format(real) : "–";
@@ -875,6 +955,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     var out = [];
     sortedIds().forEach(function(id){
       var d = state[id], st = status(d);
+      if(d.caido) return;
       ETAPAS.forEach(function(s, i){
         var e = d[s.k]; if(!e.fecha) return;
         var days = daysUntil(e.fecha);
@@ -1038,7 +1119,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     return {ing:ing, iva:iva, neto:neto, gas:gas, util:r2(neto-gas)};
   }
   function sum12(a){ var t=0; a.forEach(function(x){ if(x!=null) t+=x; }); return r2(t); }
-  function ctLabel(d){ return "Cierre "+d.n+(d.salon ? " · "+d.salon : ""); }
+  function ctLabel(d){ return "Cierre "+d.n+(d.salon ? " · "+d.salon : "")+(d.caido ? " (caído)" : ""); }
 
   function renderCuentas(){
     if(!loaded) return;
