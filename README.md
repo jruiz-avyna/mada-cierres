@@ -8,6 +8,7 @@ Módulos:
 - **Cierres**: una tarjeta por salón con sus etapas y precios.
 - **Cuentas**: cuenta de resultados de los últimos 12 meses de cada cierre (ingresos, gastos de personal, de local y de explotación). Calcula totales, IVA (21 % incluido en los ingresos), utilidad, margen y años para recuperar el traspaso. Las cabeceras de los meses son editables y admite pegar bloques desde Excel.
 - **Gastos**: registro de los gastos del proyecto (abogados, notaría, tasaciones, señales…), asignados a un cierre o generales. Calcula base e IVA, pendiente de pago, gasto en cierres caídos y reparto por categoría, cierre y pagador. Se puede copiar a Excel. Los gastos de cada cierre se suman a su inversión en Cuentas.
+- **Crédito**: línea de crédito de Jafet a MADA Salones SL (límite 500.000 €, 4 % anual, solo intereses). Registra entradas de dinero y devoluciones de capital con fecha valor, concepto, destino, forma, referencia y cuenta. Calcula el interés día a día (saldo × tipo ÷ 365, desde la fecha valor incluida) y lo agrupa por mes, a pagar el último día del mes. Permite registrar cada pago de intereses, ver el cálculo por tramos y copiarlo a Excel. Los vencimientos aparecen en el Calendario. Las condiciones (límite, tipo, base, plazo, retención) se editan en el propio módulo.
 - **Usuarios** (solo administradores): alta y baja de usuarios del panel.
 
 Publicado como artefacto de Claude: https://claude.ai/artifact/6Q6ubdoKkcAVkMa2BXPdoc

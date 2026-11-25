@@ -383,6 +383,34 @@ button.g-state:hover{filter:brightness(.95)}
 .g-bar .t{grid-column:1/-1;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
 .g-bar .t i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .g-bar.caido .t i{background:var(--muted)}
+
+/* Crédito */
+.cr-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.cr-use{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:-4px}
+.cr-use i{display:block;height:100%;width:0;background:var(--accent);border-radius:4px;transition:width .3s}
+.cr-use.hi i{background:var(--warn)}
+table.cr-int{min-width:600px}
+table.gt tbody tr.cr-now td{background:var(--accent-soft)}
+table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
+.cr-tramos{width:100%;border-collapse:collapse;font-size:12.5px}
+.cr-tramos td,.cr-tramos th{padding:3px 6px;border-bottom:1px dashed var(--line);text-align:left;font-weight:400;color:var(--muted)}
+.cr-tramos th{font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+.cr-tramos .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cr-tipo{font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;background:var(--accent-soft);color:var(--accent)}
+.cr-tipo[data-t="devolucion"]{background:var(--neutral-soft);color:var(--ink)}
+.cr-tipo[data-t="int"]{background:var(--warn-soft);color:var(--warn)}
+.g-state[data-st="now"]{background:var(--accent-soft);color:var(--accent)}
+.g-state[data-st="late"]{background:var(--bad-soft,var(--warn-soft));color:var(--bad)}
+.cr-pay{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.cr-pay .inp{width:auto;padding:4px 8px;font-size:13px}
+.cr-pay .inp.money{width:110px}
+.linkish.sm{font-size:12px}
+#crErr:empty,#crCopyMsg:empty,#crPreview:empty{display:none}
+.cr-dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:14px}
+.cr-dl dt{color:var(--muted)}
+.cr-dl dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.neg-t{color:var(--bad)}
+.cr-tax{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:4px 10px;margin:0}
 </style>
 </head>
 <body>
@@ -445,6 +473,7 @@ button.g-state:hover{filter:brightness(.95)}
     <button class="tab" role="tab" id="tab-cierres" aria-controls="view-cierres" aria-selected="false" type="button">Cierres</button>
     <button class="tab" role="tab" id="tab-cuentas" aria-controls="view-cuentas" aria-selected="false" type="button">Cuentas</button>
     <button class="tab" role="tab" id="tab-gastos" aria-controls="view-gastos" aria-selected="false" type="button">Gastos</button>
+    <button class="tab" role="tab" id="tab-credito" aria-controls="view-credito" aria-selected="false" type="button">Crédito</button>
     <button class="tab" role="tab" id="tab-usuarios" aria-controls="view-usuarios" aria-selected="false" type="button" hidden>Usuarios</button>
   </nav>
 
@@ -552,6 +581,65 @@ button.g-state:hover{filter:brightness(.95)}
             </form>
           </div>
           <div class="panel g-break" id="gBreak"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-credito" role="tabpanel" aria-labelledby="tab-credito" hidden>
+    <div class="ct-wrap">
+      <div class="ct-kpis" id="crKpis"></div>
+      <div class="cr-use" id="crUse" aria-hidden="true"><i></i></div>
+      <div class="g-layout">
+        <div class="cr-main">
+          <div class="panel">
+            <div class="ct-head">
+              <div>
+                <h2>Intereses por mes</h2>
+                <p class="form-note" id="crIntSub">–</p>
+              </div>
+              <button class="btn btn-ghost" id="crCopy" type="button">Copiar para Excel</button>
+            </div>
+            <p class="form-note" id="crCopyMsg" role="status"></p>
+            <div class="ct-scroll"><table class="gt cr-int" id="crInt"></table></div>
+          </div>
+          <div class="panel">
+            <div class="ct-head">
+              <div>
+                <h2>Movimientos de la línea</h2>
+                <p class="form-note" id="crMovSub">–</p>
+              </div>
+            </div>
+            <div class="ct-scroll"><table class="gt" id="crMovs"></table></div>
+          </div>
+        </div>
+        <aside class="g-side">
+          <div class="panel" id="crFormPanel">
+            <h2 id="crFormTitle">Registrar entrada de dinero</h2>
+            <form id="crForm" class="g-form" autocomplete="off" novalidate>
+              <div class="field"><label for="cr-tipo">Tipo de movimiento</label><select class="inp" id="cr-tipo"><option value="entrada">Entrada de dinero (disposición)</option><option value="devolucion">Devolución de capital</option></select></div>
+              <div class="row2">
+                <div class="field"><label for="cr-fecha">Fecha valor</label><input class="inp" id="cr-fecha" type="date"></div>
+                <div class="field"><label for="cr-monto">Importe</label><input class="inp money" id="cr-monto" type="text" inputmode="decimal" placeholder="0,00 €"></div>
+              </div>
+              <div class="field"><label for="cr-concepto">Concepto</label><input class="inp" id="cr-concepto" type="text" maxlength="160" placeholder="Ej.: Primera disposición para el traspaso del Cierre 1"></div>
+              <div class="field"><label for="cr-cierre">Destino del dinero</label><select class="inp" id="cr-cierre"></select></div>
+              <div class="row2">
+                <div class="field"><label for="cr-forma">Forma</label><select class="inp" id="cr-forma"><option>Transferencia</option><option>Transferencia internacional</option><option>Pago directo de Jafet a un tercero</option><option>Compensación</option><option>Otra</option></select></div>
+                <div class="field"><label for="cr-ref">Referencia bancaria</label><input class="inp" id="cr-ref" type="text" maxlength="80" placeholder="Nº de operación"></div>
+              </div>
+              <div class="field"><label for="cr-cuenta">Cuenta de destino</label><input class="inp" id="cr-cuenta" type="text" maxlength="80" list="crCuentas" placeholder="Ej.: MADA Salones · Banco ··· 1234"></div>
+              <datalist id="crCuentas"></datalist>
+              <div class="field"><label for="cr-notas">Notas</label><textarea id="cr-notas" maxlength="1000" rows="2"></textarea></div>
+              <p class="g-preview" id="crPreview"></p>
+              <p class="form-err" id="crErr" role="alert"></p>
+              <div class="g-btns">
+                <button class="btn btn-primary" id="crSubmit" type="submit">Registrar entrada</button>
+                <button class="btn btn-ghost" id="crCancel" type="button" hidden>Cancelar edición</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel" id="crCond"></div>
         </aside>
       </div>
     </div>
@@ -747,7 +835,7 @@ button.g-state:hover{filter:brightness(.95)}
   }
   function encryptState(){
     var plain = {}; Object.keys(state).forEach(function(id){ plain[id] = state[id]; });
-    return aesKey(dataKey).then(function(k){ return seal(k, te.encode(JSON.stringify({cierres:plain, gastos:gastos, pagadores:pagadores}))); });
+    return aesKey(dataKey).then(function(k){ return seal(k, te.encode(JSON.stringify({cierres:plain, gastos:gastos, pagadores:pagadores, credito:credito}))); });
   }
 
   /* ---------- rebuilding the page ---------- */
@@ -793,8 +881,8 @@ button.g-state:hover{filter:brightness(.95)}
   function uiState(){
     var a = document.activeElement, sc = $("ctScroll");
     return {view:currentView, sel:cal.sel, y:cal.y, m:cal.m, scroll:window.scrollY, ct:ctSel,
-            ctx: sc ? sc.scrollLeft : 0, focus: (a && a.id && /^(ct-|mes-|g-|gf)/.test(a.id)) ? a.id : null,
-            gf: gFilter, gd: gDraft()};
+            ctx: sc ? sc.scrollLeft : 0, focus: (a && a.id && /^(ct-|mes-|g-|gf|cr-)/.test(a.id)) ? a.id : null,
+            gf: gFilter, gd: gDraft(), cd: crDraft(), co: crOpen};
   }
   function doSave(){
     if(saving || readOnly) return Promise.resolve(false);
@@ -1026,6 +1114,7 @@ button.g-state:hover{filter:brightness(.95)}
     renderSummary();
     renderCuentas();
     renderGastos();
+    renderCredito();
   }
 
   function renderSummary(){
@@ -1056,6 +1145,7 @@ button.g-state:hover{filter:brightness(.95)}
     renderCalendar();
     renderCuentas();
     renderGastos();
+    renderCredito();
   }
 
   /* ---------- calendar ---------- */
@@ -1079,10 +1169,16 @@ button.g-state:hover{filter:brightness(.95)}
         out.push({id:id, k:s.k, i:i, n:d.n, salon:d.salon, fecha:e.fecha, hecho:e.hecho, st:evSt, days:days, current: i===st.nextIdx});
       });
     });
+    crMonths().forEach(function(m){
+      if(m.est==="prev" || !(m.neto>0)) return;
+      var days = daysUntil(m.vence), paid = !!m.pago;
+      out.push({type:"int", id:"int", k:m.ym, ym:m.ym, i:0, n:1e6, fecha:m.vence, hecho:paid, importe: paid ? m.pago.importe : m.neto,
+        st: paid ? "ok" : days<0 ? "bad" : days<=7 ? "warn" : "info", days:days, current:false});
+    });
     out.sort(function(a,b){ return a.fecha<b.fecha?-1:a.fecha>b.fecha?1:(a.n-b.n)||(a.i-b.i); });
     return out;
   }
-  function who(ev){ return "Cierre "+ev.n+(ev.salon ? " · "+ev.salon : ""); }
+  function who(ev){ return ev.type==="int" ? "Crédito · "+credito.cond.prestamista : "Cierre "+ev.n+(ev.salon ? " · "+ev.salon : ""); }
 
   function renderCalendar(){
     var calGrid = $("calGrid"); if(!calGrid || !loaded) return;
@@ -1108,8 +1204,8 @@ button.g-state:hover{filter:brightness(.95)}
       b.setAttribute("aria-label", LONG.format(dt)+(list.length ? ", "+list.length+(list.length===1?" tarea":" tareas") : ""));
       b.append(el("span","day-num", String(dt.getDate())));
       list.slice(0,3).forEach(function(e){
-        var chip = el("span","ev", "C"+e.n+" · "+ETAPAS[e.i].short); chip.dataset.st = e.st;
-        chip.title = who(e)+" — "+ETAPAS[e.i].t; b.append(chip);
+        var chip = el("span","ev", e.type==="int" ? "Intereses · "+EUR.format(e.importe) : "C"+e.n+" · "+ETAPAS[e.i].short); chip.dataset.st = e.st;
+        chip.title = e.type==="int" ? who(e)+" — Pagar intereses de "+mesTxt(e.ym).toLowerCase()+": "+eur2(e.importe) : who(e)+" — "+ETAPAS[e.i].t; b.append(chip);
       });
       if(list.length>3) b.append(el("span","ev-more","+"+(list.length-3)+" más"));
       if(list.length){ var dots = el("span","dots"); list.forEach(function(e){ var dd=el("span","ev-dot"); dd.dataset.st=e.st; dots.append(dd); }); b.append(dots); }
@@ -1126,7 +1222,28 @@ button.g-state:hover{filter:brightness(.95)}
     if(keepFocus && keepFocus.indexOf("ag-")===0){ var f=$(keepFocus); if(f) f.focus(); }
   }
 
+  function agendaInt(ev, prefix){
+    var li = el("li","ag-item"); li.dataset.st = ev.st; if(ev.hecho) li.classList.add("done");
+    var chk = el("input","check"); chk.type="checkbox"; chk.id="ag-"+prefix+"-int-"+ev.ym;
+    chk.checked = ev.hecho; chk.disabled = readOnly;
+    chk.setAttribute("aria-label", "Marcar como pagados los intereses de "+mesTxt(ev.ym).toLowerCase());
+    chk.addEventListener("change", function(){
+      if(chk.checked) credito.pagos[ev.ym] = {fecha: isoOf(new Date()), importe: ev.importe, ref: ""};
+      else delete credito.pagos[ev.ym];
+      crChanged(); var again = $(chk.id); if(again) again.focus();
+    });
+    var body = el("div","stage-body");
+    body.append(el("span","ag-who", who(ev)), el("span","ag-what", "Pagar intereses de "+mesTxt(ev.ym).toLowerCase()+" · "+eur2(ev.importe)));
+    var meta = el("div","stage-meta");
+    var ch = ev.hecho ? {st:"ok", t:"Pagado"} : dateChip({hecho:false, fecha:ev.fecha});
+    var chip = el("span","chip", ch.t); chip.dataset.st = ch.st;
+    var go = el("button","linkish","Ver crédito"); go.type="button";
+    go.addEventListener("click", function(){ showView("credito"); });
+    meta.append(chip, go); body.append(meta); li.append(chk, body);
+    return li;
+  }
   function agendaItem(ev, prefix){
+    if(ev.type==="int") return agendaInt(ev, prefix);
     var li = el("li","ag-item"); li.dataset.st = ev.st; if(ev.hecho) li.classList.add("done");
     var chk = el("input","check"); chk.type="checkbox"; chk.id="ag-"+prefix+"-"+ev.id+"-"+ev.k;
     chk.checked = ev.hecho; chk.disabled = readOnly;
@@ -1176,11 +1293,11 @@ button.g-state:hover{filter:brightness(.95)}
 
   /* ---------- tabs ---------- */
   var currentView = "calendario";
-  function views(){ return role==="admin" ? ["calendario","cierres","cuentas","gastos","usuarios"] : ["calendario","cierres","cuentas","gastos"]; }
+  function views(){ return role==="admin" ? ["calendario","cierres","cuentas","gastos","credito","usuarios"] : ["calendario","cierres","cuentas","gastos","credito"]; }
   function showView(name, fromHash){
     var vs = views(); if(vs.indexOf(name)<0) name = "calendario";
     currentView = name;
-    ["calendario","cierres","cuentas","gastos","usuarios"].forEach(function(v){
+    ["calendario","cierres","cuentas","gastos","credito","usuarios"].forEach(function(v){
       var on = v===name;
       $("tab-"+v).setAttribute("aria-selected", on ? "true" : "false");
       $("tab-"+v).tabIndex = on ? 0 : -1;
@@ -1188,7 +1305,7 @@ button.g-state:hover{filter:brightness(.95)}
     });
     if(!fromHash){ try{ history.replaceState(null,"","#"+name); }catch(e){ location.hash = name; } }
   }
-  ["calendario","cierres","cuentas","gastos","usuarios"].forEach(function(v){
+  ["calendario","cierres","cuentas","gastos","credito","usuarios"].forEach(function(v){
     var t = $("tab-"+v);
     t.addEventListener("click", function(){ showView(v); });
     t.addEventListener("keydown", function(ev){
@@ -1732,6 +1849,409 @@ button.g-state:hover{filter:brightness(.95)}
     }catch(e){ msg.textContent = "Tu navegador no ha permitido copiar. Prueba desde claude.ai en Chrome o Safari."; }
   });
 
+  /* ---------- Crédito (línea de crédito de Jafet) ----------
+     Interés simple diario: cada día, saldo dispuesto al cierre del día × tipo / base (365 por defecto).
+     Una entrada genera intereses desde su fecha valor (incluida); una devolución deja de generarlos ese mismo día.
+     Se liquidan solo intereses, a mes vencido (último día de cada mes). */
+  var CR_DEF = {prestamista:"Jafet Alejandro Abreu Navarro", prestatario:"MADA Salones SL", tope:500000, tasa:4, base:"365", inicio:"", plazo:5, ret:0};
+  var credito = {cond: Object.assign({}, CR_DEF), movs: [], pagos: {}};
+  var crEditing = null, crConfirmDel = null, crOpen = {}, crPaying = null, crUnpay = null, crCondEdit = false;
+  var MES_L = new Intl.DateTimeFormat("es-ES",{month:"long", year:"numeric"});
+  function isoOK(x){ return typeof x==="string" && /^\d{4}-\d{2}-\d{2}$/.test(x); }
+  function normCredito(o){
+    var out = {cond: Object.assign({}, CR_DEF), movs: [], pagos: {}};
+    if(!o || typeof o!=="object") return out;
+    var c = o.cond || {};
+    function str(x,n,d){ return typeof x==="string" ? x.slice(0,n) : d; }
+    function num(x,min,max,d){ return typeof x==="number" && isFinite(x) && x>=min && x<=max ? x : d; }
+    out.cond = {
+      prestamista: str(c.prestamista,120,CR_DEF.prestamista), prestatario: str(c.prestatario,120,CR_DEF.prestatario),
+      tope: num(c.tope,0,1e9,CR_DEF.tope), tasa: num(c.tasa,0,100,CR_DEF.tasa),
+      base: ["365","360","act"].indexOf(c.base)>=0 ? c.base : "365",
+      inicio: isoOK(c.inicio) ? c.inicio : "", plazo: num(c.plazo,0,99,CR_DEF.plazo), ret: num(c.ret,0,100,0)
+    };
+    if(Array.isArray(o.movs)) o.movs.forEach(function(m){
+      if(!m || typeof m.id!=="string" || !/^[a-z0-9_-]{1,40}$/i.test(m.id)) return;
+      if(typeof m.monto!=="number" || !isFinite(m.monto) || m.monto<=0 || !isoOK(m.fecha)) return;
+      out.movs.push({id:m.id, tipo: m.tipo==="devolucion" ? "devolucion" : "entrada", fecha:m.fecha, monto:r2(m.monto),
+        concepto:str(m.concepto,160,""), cierre:(typeof m.cierre==="string" && /^[a-z0-9_-]{0,40}$/i.test(m.cierre)) ? m.cierre : "",
+        forma:str(m.forma,60,"Transferencia"), ref:str(m.ref,80,""), cuenta:str(m.cuenta,80,""), notas:str(m.notas,1000,"")});
+    });
+    if(o.pagos && typeof o.pagos==="object") Object.keys(o.pagos).forEach(function(k){
+      var p = o.pagos[k]; if(!/^\d{4}-\d{2}$/.test(k) || !p || typeof p.importe!=="number" || !isFinite(p.importe)) return;
+      out.pagos[k] = {fecha: isoOK(p.fecha) ? p.fecha : "", importe: r2(p.importe), ref: str(p.ref,80,"")};
+    });
+    return out;
+  }
+  function crSign(m){ return m.tipo==="devolucion" ? -m.monto : m.monto; }
+  function crSorted(list){ return (list||credito.movs).slice().sort(function(a,b){ return a.fecha<b.fecha?-1:a.fecha>b.fecha?1:(a.id<b.id?-1:1); }); }
+  function crSaldoAl(iso){ var s=0; credito.movs.forEach(function(m){ if(m.fecha<=iso) s+=crSign(m); }); return r2(s); }
+  function crBase(y){ var b=credito.cond.base; if(b==="360") return 360; if(b==="act") return (y%4===0 && (y%100!==0 || y%400===0)) ? 366 : 365; return 365; }
+  function crBaseTxt(){ var b=credito.cond.base; return b==="360" ? "base 360" : b==="act" ? "base real (365/366)" : "base 365"; }
+  function addDays(iso, n){ var d=dateOf(iso); d.setDate(d.getDate()+n); return isoOf(d); }
+  function lastDay(ym){ var p=ym.split("-").map(Number); return isoOf(new Date(p[0], p[1], 0)); }
+  function nextYm(ym){ var p=ym.split("-").map(Number); p[1]++; if(p[1]>12){ p[1]=1; p[0]++; } return p[0]+"-"+pad(p[1]); }
+  function mesTxt(ym){ var p=ym.split("-").map(Number), t=MES_L.format(new Date(p[0],p[1]-1,1)); return t.charAt(0).toUpperCase()+t.slice(1); }
+  function pctTxt(v){ return String(v).replace(".",",")+" %"; }
+  function crRet(x){ return r2(x*credito.cond.ret/100); }
+  function crNeto(x){ return r2(x - crRet(x)); }
+
+  /* Interés de un mes, día a día, opcionalmente solo hasta "upto". */
+  function crMonth(ym, upto){
+    var start = ym+"-01", end = lastDay(ym); if(upto && upto<end) end = upto;
+    var byDay = {}; credito.movs.forEach(function(m){ if(m.fecha>=start && m.fecha<=end) byDay[m.fecha] = (byDay[m.fecha]||0) + crSign(m); });
+    var s = crSaldoAl(addDays(start,-1)), tasa = credito.cond.tasa/100, base = crBase(Number(ym.slice(0,4)));
+    var tramos = [], cur = null, total = 0, sum = 0, dias = 0;
+    for(var d=start; d<=end; d=addDays(d,1)){
+      if(byDay[d]) s = r2(s + byDay[d]);
+      var i = s>0 ? s*tasa/base : 0;
+      total += i; sum += s; dias++;
+      if(cur && cur.saldo===s){ cur.hasta = d; cur.dias++; cur.int += i; }
+      else { cur = {desde:d, hasta:d, dias:1, saldo:s, int:i}; tramos.push(cur); }
+    }
+    return {ym:ym, dias:dias, interes:r2(total), medio: dias ? r2(sum/dias) : 0, tramos:tramos};
+  }
+  /* Todos los meses desde la primera entrada hasta el mes actual (o el del último movimiento si es posterior). */
+  function crMonths(){
+    if(!credito.movs.length) return [];
+    var s = crSorted(), today = isoOf(new Date()), nowYm = today.slice(0,7);
+    var ym = s[0].fecha.slice(0,7), endYm = s[s.length-1].fecha.slice(0,7); if(nowYm>endYm) endYm = nowYm;
+    var out = [], guard = 0;
+    while(ym<=endYm && guard++<240){
+      var m = crMonth(ym);
+      m.bruto = m.interes; m.ret = crRet(m.interes); m.neto = crNeto(m.interes); m.vence = lastDay(ym);
+      m.pago = credito.pagos[ym] || null;
+      if(ym===nowYm){ var h = crMonth(ym, today); m.hoy = h.interes; }
+      m.est = m.pago ? "pagado" : ym<nowYm ? "late" : ym===nowYm ? "now" : "prev";
+      if(m.interes>0 || m.pago) out.push(m);
+      ym = nextYm(ym);
+    }
+    return out;
+  }
+  function crEstTxt(m){
+    if(m.est==="pagado") return "Pagado";
+    if(m.est==="late") return "Por pagar";
+    if(m.est==="now") return m.vence===isoOf(new Date()) ? "Vence hoy" : "En curso";
+    return "Previsto";
+  }
+  /* Comprueba que el saldo nunca supere el límite ni sea negativo. */
+  function crCheck(list){
+    var s = 0, tope = credito.cond.tope, out = null;
+    crSorted(list).forEach(function(m){
+      if(out) return;
+      s = r2(s + crSign(m));
+      if(s < 0) out = "Con esta devolución el saldo quedaría en negativo el "+fmtDate(m.fecha)+". No se puede devolver más de lo dispuesto.";
+      else if(tope && s > tope) out = "Con esta entrada el saldo dispuesto llegaría a "+eur2(s)+" el "+fmtDate(m.fecha)+" y supera el límite de "+EUR.format(tope)+".";
+    });
+    return out;
+  }
+
+  function renderCredito(){
+    if(!loaded || !$("crInt")) return;
+    var c = credito.cond, today = isoOf(new Date()), nowYm = today.slice(0,7);
+    var saldo = crSaldoAl(today), months = crMonths();
+    var cur = months.filter(function(m){ return m.ym===nowYm; })[0];
+    var pend = 0, nPend = 0, pagado = 0, total = 0;
+    months.forEach(function(m){ total += m.neto; if(m.pago) pagado += m.pago.importe; else if(m.est==="late"){ pend += m.neto; nPend++; } });
+
+    // KPIs
+    var box = $("crKpis"); box.textContent = "";
+    function tile(k, v, sub, cls){ var t=el("div","tile"); t.append(el("span","k",k)); var vv=el("span","v",v); if(cls) vv.classList.add(cls); t.append(vv, el("span","s",sub)); box.append(t); }
+    var pctUso = c.tope ? saldo/c.tope*100 : 0;
+    tile("Dispuesto hoy", EUR.format(saldo), "de "+EUR.format(c.tope)+" · "+String(Math.round(pctUso*10)/10).replace(".",",")+" % usado");
+    tile("Disponible", EUR.format(r2(c.tope - saldo)), "Lo que aún puede poner "+c.prestamista.split(" ")[0]);
+    tile("Intereses de "+mesTxt(nowYm).split(" ")[0].toLowerCase(), cur ? eur2(cur.neto) : "0,00 €",
+      cur ? "Devengado hasta hoy "+eur2(crNeto(cur.hoy))+" · se paga el "+fmtDate(cur.vence) : (saldo>0 ? "–" : "Sin dinero dispuesto este mes"));
+    tile("Pendiente de pagar", eur2(r2(pend)), nPend ? nPend+(nPend===1?" mes cerrado sin pagar":" meses cerrados sin pagar")+" · pagado "+eur2(r2(pagado)) : "Al día · pagado "+eur2(r2(pagado)), nPend ? "neg" : null);
+    var anual = r2(saldo*c.tasa/100);
+    tile("Coste con el saldo actual", eur2(r2(anual/12))+" /mes", "≈ "+EUR.format(anual)+" al año al "+pctTxt(c.tasa));
+    var bar = $("crUse"); bar.firstChild.style.width = Math.min(100, Math.max(0, pctUso))+"%"; bar.classList.toggle("hi", pctUso>=80);
+    bar.title = "Uso del límite: "+String(Math.round(pctUso*10)/10).replace(".",",")+" %";
+
+    // Tabla de intereses
+    var tbl = $("crInt"), hasRet = c.ret>0; tbl.textContent = "";
+    $("crIntSub").textContent = months.length
+      ? "Solo intereses, sin amortizar capital. "+pctTxt(c.tasa)+" anual calculado día a día ("+crBaseTxt()+"). Se paga a mes vencido, el último día de cada mes."
+      : "Cuando registres la primera entrada de dinero, aquí verás cuánto hay que pagar de intereses cada mes.";
+    var thead = el("thead"), hr = el("tr");
+    var cols = [["Mes"],["Saldo medio","n"],["Interés","n"]].concat(hasRet ? [["Retención","n"]] : []).concat([["A pagar","n"],["Estado"],[""]]);
+    cols.forEach(function(h){ var th=el("th",h[1]||null,h[0]); th.scope="col"; hr.append(th); });
+    thead.append(hr); tbl.append(thead);
+    var tb = el("tbody"), ncol = cols.length;
+    if(!months.length){ var tr0=el("tr"), td0=el("td","g-empty", "Todavía no hay intereses."); td0.colSpan=ncol; tr0.append(td0); tb.append(tr0); }
+    months.slice().reverse().forEach(function(m){
+      var tr = el("tr"); if(m.est==="now") tr.classList.add("cr-now");
+      var t1 = el("td"); t1.append(el("div","g-con", mesTxt(m.ym)));
+      var tg = el("button","linkish sm", crOpen[m.ym] ? "Ocultar cálculo" : "Ver cálculo"); tg.type="button"; tg.id="cr-tg-"+m.ym;
+      tg.setAttribute("aria-expanded", crOpen[m.ym] ? "true" : "false");
+      tg.addEventListener("click", function(){ crOpen[m.ym] = !crOpen[m.ym]; renderCredito(); var b=$("cr-tg-"+m.ym); if(b) b.focus(); });
+      t1.append(tg); tr.append(t1);
+      tr.append(el("td","n", eur2(m.medio)));
+      var ti = el("td","n"); ti.append(el("div",null, eur2(m.bruto)));
+      if(m.est==="now") ti.append(el("div","g-sub","Hasta hoy "+eur2(m.hoy)));
+      tr.append(ti);
+      if(hasRet) tr.append(el("td","n", "−"+eur2(m.ret)));
+      var tn = el("td","n"); tn.append(el("div","g-con", eur2(m.neto))); tr.append(tn);
+      var ts = el("td"), sp = el("span","g-state", crEstTxt(m)); sp.dataset.st = m.est==="pagado" ? "pagado" : m.est; ts.append(sp);
+      if(!m.pago) ts.append(el("div","g-meta", (m.est==="late" ? "Venció el " : "Vence el ")+fmtDate(m.vence)));
+      if(m.pago){
+        ts.append(el("div","g-meta", (m.pago.fecha ? "El "+fmtDate(m.pago.fecha)+" · " : "")+eur2(m.pago.importe)+(m.pago.ref ? " · "+m.pago.ref : "")));
+        if(Math.abs(m.pago.importe - m.neto) >= 0.01) ts.append(el("div","g-meta neg-t", "Diferencia con el cálculo: "+eur2(r2(m.neto - m.pago.importe))));
+      }
+      tr.append(ts);
+      var ta = el("td","g-acts");
+      if(!readOnly && m.ym<=nowYm){
+        if(crPaying===m.ym){
+          var f = el("div","cr-pay");
+          var fd = el("input","inp"); fd.type="date"; fd.id="cr-pf"; fd.value = (m.pago && m.pago.fecha) || today; fd.setAttribute("aria-label","Fecha del pago");
+          var fi = el("input","inp money"); fi.type="text"; fi.inputMode="decimal"; fi.id="cr-pi"; fi.value = fmt2(m.pago ? m.pago.importe : m.neto); fi.setAttribute("aria-label","Importe pagado");
+          var fr = el("input","inp"); fr.type="text"; fr.id="cr-pr"; fr.maxLength=80; fr.placeholder="Ref."; fr.value = m.pago ? m.pago.ref : ""; fr.setAttribute("aria-label","Referencia del pago"); fr.style.width="90px";
+          var ok = el("button","btn btn-primary","Guardar"); ok.type="button";
+          var no = el("button","btn btn-ghost","Cancelar"); no.type="button";
+          ok.addEventListener("click", function(){
+            var p = parseNum(fi.value);
+            if(!fd.value || !p.ok || p.v==null || p.v<=0){ fi.focus(); fi.setAttribute("aria-invalid","true"); return; }
+            credito.pagos[m.ym] = {fecha: fd.value, importe: p.v, ref: fr.value.trim().slice(0,80)};
+            crPaying = null; crChanged(); $("crCopyMsg").textContent = "Pago de intereses de "+mesTxt(m.ym).toLowerCase()+" registrado: "+eur2(p.v)+".";
+          });
+          no.addEventListener("click", function(){ crPaying = null; renderCredito(); });
+          [fd,fi,fr].forEach(function(x){ x.addEventListener("keydown", function(ev){ if(ev.key==="Enter"){ ev.preventDefault(); ok.click(); } if(ev.key==="Escape"){ ev.preventDefault(); no.click(); } }); });
+          f.append(fd, fi, fr, ok, no); ta.append(f); setTimeout(function(){ fi.focus(); fi.select(); }, 0);
+        } else if(crUnpay===m.ym){
+          var bx = el("div","confirm"); bx.append(document.createTextNode("¿Quitar el pago?"));
+          var y = el("button","btn btn-danger","Quitar"); y.type="button";
+          var n = el("button","btn btn-ghost","No"); n.type="button";
+          y.addEventListener("click", function(){ delete credito.pagos[m.ym]; crUnpay = null; crChanged(); });
+          n.addEventListener("click", function(){ crUnpay = null; renderCredito(); });
+          bx.append(y, n); ta.append(bx); setTimeout(function(){ n.focus(); }, 0);
+        } else if(m.pago){
+          var e1 = el("button",null,"Editar pago"); e1.type="button"; e1.addEventListener("click", function(){ crPaying = m.ym; crUnpay = null; renderCredito(); });
+          var d1 = el("button","danger","Quitar pago"); d1.type="button"; d1.addEventListener("click", function(){ crUnpay = m.ym; crPaying = null; renderCredito(); });
+          ta.append(e1, d1);
+        } else {
+          var pb = el("button",null,"Registrar pago"); pb.type="button"; pb.addEventListener("click", function(){ crPaying = m.ym; crUnpay = null; renderCredito(); });
+          ta.append(pb);
+        }
+      }
+      tr.append(ta); tb.append(tr);
+      if(crOpen[m.ym]){
+        var dr = el("tr","cr-det"), dt = el("td"); dt.colSpan = ncol;
+        var tt = el("table","cr-tramos"), th2 = el("tr");
+        [["Del","",""],["Al",""],["Días","n"],["Saldo dispuesto","n"],["Interés","n"]].forEach(function(h){ var x=el("th",h[1]||null,h[0]); x.scope="col"; th2.append(x); });
+        tt.append(th2);
+        m.tramos.forEach(function(t){
+          var r = el("tr");
+          r.append(el("td",null,fmtDate(t.desde)), el("td",null,fmtDate(t.hasta)), el("td","n",String(t.dias)), el("td","n",eur2(t.saldo)), el("td","n",eur2(r2(t.int))));
+          tt.append(r);
+        });
+        dt.append(tt, el("p","g-meta","Interés diario = saldo × "+pctTxt(c.tasa)+" ÷ "+crBase(Number(m.ym.slice(0,4)))+". Se suma día a día y se redondea al céntimo al final del mes."+(hasRet ? " Retención del "+pctTxt(c.ret)+" sobre el interés." : "")));
+        dr.append(dt); tb.append(dr);
+      }
+    });
+    tbl.append(tb);
+    if(months.length){
+      var tf = el("tfoot"), frr = el("tr"), lab = el("td",null,"Total desde el inicio"); lab.colSpan = hasRet ? 4 : 3;
+      var tot = el("td","n"); tot.append(el("div",null,eur2(r2(total))), el("div","g-sub","Pagado "+eur2(r2(pagado))));
+      frr.append(lab, tot); var rest = el("td"); rest.colSpan = 2; frr.append(rest); tf.append(frr); tbl.append(tf);
+    }
+
+    // Movimientos
+    var mt = $("crMovs"); mt.textContent = "";
+    var asc = crSorted(), run = 0, after = {}, ent = 0, dev = 0;
+    asc.forEach(function(m){ run = r2(run + crSign(m)); after[m.id] = run; if(m.tipo==="entrada") ent += m.monto; else dev += m.monto; });
+    $("crMovSub").textContent = asc.length ? asc.length+(asc.length===1?" movimiento":" movimientos")+" · entradas "+eur2(r2(ent))+(dev ? " · devuelto "+eur2(r2(dev)) : "") : "Todavía no hay entradas de dinero.";
+    var mh = el("thead"), mhr = el("tr");
+    [["Fecha"],["Concepto"],["Destino"],["Tipo"],["Importe","n"],["Saldo","n"],[""]].forEach(function(h){ var th=el("th",h[1]||null,h[0]); th.scope="col"; mhr.append(th); });
+    mh.append(mhr); mt.append(mh);
+    var mb = el("tbody");
+    if(!asc.length){ var e0=el("tr"), c0=el("td","g-empty", readOnly ? "Todavía no hay movimientos." : "Registra la primera entrada con el formulario."); c0.colSpan=7; e0.append(c0); mb.append(e0); }
+    asc.slice().reverse().forEach(function(m){
+      var tr = el("tr"); if(crEditing===m.id) tr.classList.add("editing");
+      var fd = el("td"); fd.append(el("div",null,fmtDate(m.fecha))); if(m.fecha>today) fd.append(el("div","g-meta","Futura")); tr.append(fd);
+      var tc = el("td"); tc.append(el("div","g-con", m.concepto || "(sin concepto)"));
+      var meta = [m.forma, m.ref ? "Ref. "+m.ref : "", m.cuenta].filter(Boolean).join(" · ");
+      if(meta) tc.append(el("div","g-meta",meta));
+      if(m.notas) tc.append(el("div","g-meta",m.notas));
+      tr.append(tc);
+      tr.append(el("td",null,gCierreName(m.cierre)));
+      var tt2 = el("td"), ch = el("span","cr-tipo", m.tipo==="entrada" ? "Entrada" : "Devolución"); ch.dataset.t = m.tipo; tt2.append(ch); tr.append(tt2);
+      tr.append(el("td","n", (m.tipo==="entrada" ? "+" : "−")+eur2(m.monto)));
+      tr.append(el("td","n", eur2(after[m.id])));
+      var ta = el("td","g-acts");
+      if(!readOnly){
+        if(crConfirmDel===m.id){
+          var bx = el("div","confirm"); bx.append(document.createTextNode("¿Eliminar?"));
+          var y = el("button","btn btn-danger","Eliminar"); y.type="button";
+          var n = el("button","btn btn-ghost","No"); n.type="button";
+          y.addEventListener("click", function(){
+            var rest = credito.movs.filter(function(x){ return x.id!==m.id; }), err = crCheck(rest);
+            crConfirmDel = null;
+            if(err){ $("crCopyMsg").textContent = "No se puede eliminar: "+err; renderCredito(); return; }
+            credito.movs = rest; if(crEditing===m.id) crResetForm(); crChanged();
+          });
+          n.addEventListener("click", function(){ crConfirmDel = null; renderCredito(); });
+          bx.append(y, n); ta.append(bx); setTimeout(function(){ n.focus(); }, 0);
+        } else {
+          var eb = el("button",null,"Editar"); eb.type="button"; eb.addEventListener("click", function(){ crEdit(m.id); });
+          var db = el("button","danger","Eliminar"); db.type="button"; db.addEventListener("click", function(){ crConfirmDel = m.id; renderCredito(); });
+          ta.append(eb, db);
+        }
+      }
+      tr.append(ta); mb.append(tr);
+    });
+    mt.append(mb);
+
+    // Formulario y condiciones
+    $("crFormPanel").hidden = readOnly;
+    var keep = $("cr-cierre").value; gFillSelect($("cr-cierre"), gCierreOpts(), keep);
+    var dl = $("crCuentas"); dl.textContent = "";
+    var seen = {}; credito.movs.forEach(function(m){ if(m.cuenta && !seen[m.cuenta.toLowerCase()]){ seen[m.cuenta.toLowerCase()] = 1; var o=el("option"); o.value=m.cuenta; dl.append(o); } });
+    crPreview();
+    crRenderCond();
+  }
+
+  function crRenderCond(){
+    var box = $("crCond"), c = credito.cond; box.textContent = "";
+    var head = el("div","ct-head"); head.append(el("h2",null,"Condiciones de la línea"));
+    if(!readOnly && !crCondEdit){ var eb = el("button","btn btn-ghost","Editar"); eb.type="button"; eb.id="cr-cond-edit"; eb.addEventListener("click", function(){ crCondEdit = true; crRenderCond(); var f=$("cr-c-tope"); if(f) f.focus(); }); head.append(eb); }
+    box.append(head);
+    if(crCondEdit && !readOnly){
+      var f = el("form","g-form"); f.noValidate = true;
+      function fld(id, label, input){ var d=el("div","field"), l=el("label",null,label); l.htmlFor=id; input.id=id; d.append(l,input); return d; }
+      function inp(type, val, extra){ var i=el("input","inp"); i.type=type; i.value=val; if(extra) Object.keys(extra).forEach(function(k){ i[k]=extra[k]; }); return i; }
+      var iPm = inp("text", c.prestamista, {maxLength:120}), iPt = inp("text", c.prestatario, {maxLength:120});
+      var iTope = inp("text", fmt2(c.tope), {inputMode:"decimal"}); iTope.classList.add("money");
+      var iTasa = inp("text", String(c.tasa).replace(".",","), {inputMode:"decimal"});
+      var iBase = el("select","inp"); [["365","365 días (año comercial fijo)"],["act","Días reales del año (365/366)"],["360","360 días"]].forEach(function(o){ var op=el("option",null,o[1]); op.value=o[0]; iBase.append(op); }); iBase.value = c.base;
+      var iIni = inp("date", c.inicio), iPl = inp("number", String(c.plazo), {min:0, max:99, step:1});
+      var iRet = inp("text", String(c.ret).replace(".",","), {inputMode:"decimal"});
+      var r1 = el("div","row2"); r1.append(fld("cr-c-tope","Límite (€)",iTope), fld("cr-c-tasa","Interés anual (%)",iTasa));
+      var r2d = el("div","row2"); r2d.append(fld("cr-c-ini","Fecha del contrato",iIni), fld("cr-c-plazo","Plazo (años)",iPl));
+      f.append(fld("cr-c-pm","Prestamista",iPm), fld("cr-c-pt","Prestatario",iPt), r1, fld("cr-c-base","Base de cálculo diario",iBase), r2d, fld("cr-c-ret","Retención sobre intereses (%)",iRet));
+      var err = el("p","form-err"); err.setAttribute("role","alert"); f.append(err);
+      var bs = el("div","g-btns"), ok = el("button","btn btn-primary","Guardar condiciones"), no = el("button","btn btn-ghost","Cancelar"); ok.type="submit"; no.type="button";
+      bs.append(ok, no); f.append(bs);
+      f.append(el("p","form-note","Si cambias el tipo o la base, se recalculan todos los meses, también los ya pagados. Los pagos registrados no cambian y verás la diferencia."));
+      no.addEventListener("click", function(){ crCondEdit = false; crRenderCond(); $("cr-cond-edit").focus(); });
+      f.addEventListener("submit", function(ev){
+        ev.preventDefault(); err.textContent = "";
+        var tope = parseNum(iTope.value), tasa = parseNum(iTasa.value), ret = parseNum(iRet.value), pl = Number(iPl.value);
+        if(!tope.ok || tope.v==null || tope.v<=0){ err.textContent = "Indica el límite de la línea."; iTope.focus(); return; }
+        if(!tasa.ok || tasa.v==null || tasa.v<0 || tasa.v>100){ err.textContent = "Indica el interés anual en %, por ejemplo 4."; iTasa.focus(); return; }
+        if(!ret.ok || (ret.v!=null && (ret.v<0 || ret.v>100))){ err.textContent = "La retención va de 0 a 100 %."; iRet.focus(); return; }
+        if(!(pl>=0 && pl<=99)){ err.textContent = "El plazo va de 0 a 99 años."; iPl.focus(); return; }
+        var prev = credito.cond;
+        credito.cond = {prestamista: iPm.value.trim() || CR_DEF.prestamista, prestatario: iPt.value.trim() || CR_DEF.prestatario,
+          tope: tope.v, tasa: tasa.v, base: iBase.value, inicio: iIni.value || "", plazo: Math.round(pl), ret: ret.v || 0};
+        var e2 = crCheck(credito.movs);
+        if(e2 && credito.cond.tope < prev.tope){ credito.cond = prev; err.textContent = "El nuevo límite es menor que lo ya dispuesto. "+e2; iTope.focus(); return; }
+        crCondEdit = false; crChanged(); var b=$("cr-cond-edit"); if(b) b.focus();
+      });
+      box.append(f);
+      return;
+    }
+    var dl = el("dl","cr-dl");
+    function row(k, v){ dl.append(el("dt",null,k), el("dd",null,v)); }
+    row("Prestamista", c.prestamista); row("Prestatario", c.prestatario);
+    row("Límite", EUR.format(c.tope));
+    row("Interés", pctTxt(c.tasa)+" anual, simple, calculado cada día ("+crBaseTxt()+")");
+    row("Pago", "Solo intereses, a mes vencido (último día de cada mes). Sin amortización de capital.");
+    row("Contrato", c.inicio ? fmtDate(c.inicio)+(c.plazo ? " · vence el "+fmtDate(addYears(c.inicio, c.plazo))+" (prorrogable)" : "") : "Fecha sin indicar"+(c.plazo ? " · plazo "+c.plazo+" años" : ""));
+    row("Retención", c.ret ? pctTxt(c.ret)+" sobre el interés" : "0 %");
+    box.append(dl);
+    if(!c.ret) box.append(el("p","cr-tax","Sin retención: Jafet es residente fiscal en EE. UU. y el convenio España–EE. UU. grava los intereses solo en su país. Requiere su certificado de residencia fiscal (Form 6166) y declarar los pagos en los modelos 216 y 296. Conviene confirmarlo con la gestoría."));
+  }
+  function addYears(iso, n){ var d=dateOf(iso); d.setFullYear(d.getFullYear()+n); return isoOf(d); }
+
+  function crChanged(){ renderCredito(); renderCalendar(); markDirty(); flushSoon(); }
+
+  /* formulario de movimientos */
+  function crTipoUI(){
+    var dev = $("cr-tipo").value==="devolucion";
+    if(!crEditing){ $("crFormTitle").textContent = dev ? "Registrar devolución de capital" : "Registrar entrada de dinero"; $("crSubmit").textContent = dev ? "Registrar devolución" : "Registrar entrada"; }
+    $("cr-cuenta").previousElementSibling.textContent = dev ? "Cuenta de origen" : "Cuenta de destino";
+  }
+  function crPreview(){
+    var p = parseNum($("cr-monto").value), out = $("crPreview");
+    if(!p.ok || p.v==null || p.v<=0){ out.textContent = ""; return; }
+    var c = credito.cond, dev = $("cr-tipo").value==="devolucion";
+    var base = crEditing ? credito.movs.filter(function(x){ return x.id!==crEditing; }) : credito.movs;
+    var s = 0; base.forEach(function(m){ s += crSign(m); });
+    var nuevo = r2(s + (dev ? -p.v : p.v)), diario = r2(p.v*c.tasa/100/crBase(new Date().getFullYear()));
+    out.textContent = (dev ? "Saldo tras devolver: " : "Saldo dispuesto tras la entrada: ")+eur2(nuevo)+" · disponible "+eur2(r2(c.tope - nuevo))+" · "+(dev ? "ahorra " : "genera ")+eur2(diario)+" de interés al día (≈ "+eur2(r2(p.v*c.tasa/100/12))+" al mes)";
+  }
+  function crResetForm(){
+    crEditing = null;
+    $("cr-tipo").value = "entrada"; $("cr-fecha").value = isoOf(new Date()); $("cr-monto").value = ""; $("cr-concepto").value = "";
+    $("cr-cierre").value = ""; $("cr-forma").value = "Transferencia"; $("cr-ref").value = ""; $("cr-cuenta").value = ""; $("cr-notas").value = "";
+    $("crErr").textContent = ""; $("crPreview").textContent = ""; $("crCancel").hidden = true;
+    crTipoUI();
+  }
+  function crEdit(id){
+    var m = credito.movs.filter(function(x){ return x.id===id; })[0]; if(!m) return;
+    crEditing = id; crConfirmDel = null;
+    $("cr-tipo").value = m.tipo; $("cr-fecha").value = m.fecha; $("cr-monto").value = fmt2(m.monto); $("cr-concepto").value = m.concepto;
+    $("cr-cierre").value = m.cierre; $("cr-forma").value = m.forma; if($("cr-forma").value!==m.forma) $("cr-forma").value = "Otra";
+    $("cr-ref").value = m.ref; $("cr-cuenta").value = m.cuenta; $("cr-notas").value = m.notas; $("crErr").textContent = "";
+    $("crFormTitle").textContent = "Editar movimiento"; $("crSubmit").textContent = "Guardar cambios"; $("crCancel").hidden = false;
+    crTipoUI(); renderCredito();
+    $("crFormPanel").scrollIntoView({block:"nearest"}); $("cr-concepto").focus();
+  }
+  var CR_FIELDS = ["cr-tipo","cr-fecha","cr-monto","cr-concepto","cr-cierre","cr-forma","cr-ref","cr-cuenta","cr-notas"];
+  function crDraft(){ if(!$("cr-fecha")) return null; var d = {editing:crEditing}; CR_FIELDS.forEach(function(f){ d[f] = $(f).value; }); return d; }
+  var crPendingDraft = null;
+  function crApplyDraft(){
+    var d = crPendingDraft; crPendingDraft = null; if(!d) return;
+    renderCredito();
+    CR_FIELDS.forEach(function(f){ if(typeof d[f]==="string") $(f).value = d[f]; });
+    if(d.editing && credito.movs.some(function(x){ return x.id===d.editing; })){
+      crEditing = d.editing; $("crFormTitle").textContent = "Editar movimiento"; $("crSubmit").textContent = "Guardar cambios"; $("crCancel").hidden = false;
+      renderCredito();
+    }
+    crTipoUI(); crPreview();
+  }
+  $("cr-tipo").addEventListener("change", function(){ $("crErr").textContent = ""; crTipoUI(); crPreview(); });
+  $("cr-monto").addEventListener("input", crPreview);
+  $("cr-monto").addEventListener("blur", function(){ var p = parseNum(this.value); if(p.ok && p.v!=null) this.value = fmt2(p.v); });
+  $("crCancel").addEventListener("click", function(){ crResetForm(); renderCredito(); });
+  $("crForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    if(readOnly) return;
+    var err = $("crErr"), p = parseNum($("cr-monto").value), fecha = $("cr-fecha").value, concepto = $("cr-concepto").value.trim(), tipo = $("cr-tipo").value;
+    err.textContent = "";
+    if(!fecha){ err.textContent = "Indica la fecha valor: el día en que el dinero llega a la cuenta."; $("cr-fecha").focus(); return; }
+    if(!p.ok || p.v==null || p.v<=0){ err.textContent = "Escribe el importe, en positivo."; $("cr-monto").focus(); return; }
+    if(!concepto){ err.textContent = "Escribe el concepto."; $("cr-concepto").focus(); return; }
+    var m = {id: crEditing || ("m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)), tipo: tipo==="devolucion" ? "devolucion" : "entrada",
+      fecha: fecha, monto: p.v, concepto: concepto.slice(0,160), cierre: $("cr-cierre").value, forma: $("cr-forma").value,
+      ref: $("cr-ref").value.trim().slice(0,80), cuenta: $("cr-cuenta").value.trim().slice(0,80), notas: $("cr-notas").value.trim().slice(0,1000)};
+    var editing = crEditing;
+    var list = editing ? credito.movs.map(function(x){ return x.id===editing ? m : x; }) : credito.movs.concat([m]);
+    var bad = crCheck(list);
+    if(bad){ err.textContent = bad; $("cr-monto").focus(); return; }
+    credito.movs = list;
+    crResetForm(); crChanged();
+    $("crCopyMsg").textContent = editing ? "Cambios guardados en «"+m.concepto+"»." : (m.tipo==="entrada" ? "Entrada registrada: " : "Devolución registrada: ")+eur2(m.monto)+" el "+fmtDate(m.fecha)+".";
+    $("cr-concepto").focus();
+  });
+
+  $("crCopy").addEventListener("click", function(){
+    var months = crMonths(), c = credito.cond, msg = $("crCopyMsg");
+    function num(v){ return String(r2(v).toFixed(2)).replace(".",","); }
+    function cell(x){ return String(x==null?"":x).replace(/[\t\r\n]+/g," "); }
+    function f(iso){ return iso ? iso.split("-").reverse().join("/") : ""; }
+    if(!months.length && !credito.movs.length){ msg.textContent = "Todavía no hay nada que copiar."; return; }
+    var rows = ["Línea de crédito "+c.prestamista+" → "+c.prestatario+"\tLímite "+num(c.tope)+"\tInterés "+String(c.tasa).replace(".",",")+" % ("+crBaseTxt()+")", "",
+      ["Mes","Saldo medio","Interés","Retención","A pagar","Vence","Estado","Fecha pago","Importe pagado"].join("\t")];
+    months.forEach(function(m){ rows.push([mesTxt(m.ym), num(m.medio), num(m.bruto), num(m.ret), num(m.neto), f(m.vence), crEstTxt(m), m.pago ? f(m.pago.fecha) : "", m.pago ? num(m.pago.importe) : ""].map(cell).join("\t")); });
+    rows.push("", ["Fecha valor","Tipo","Concepto","Destino","Forma","Referencia","Cuenta","Importe","Saldo tras","Notas"].join("\t"));
+    var run = 0;
+    crSorted().forEach(function(m){ run = r2(run + crSign(m)); rows.push([f(m.fecha), m.tipo==="entrada"?"Entrada":"Devolución", m.concepto, gCierreName(m.cierre), m.forma, m.ref, m.cuenta, num(crSign(m)), num(run), m.notas].map(cell).join("\t")); });
+    var done = function(){ msg.textContent = "Copiado: intereses por mes y movimientos. Pégalo en Excel o en un correo."; };
+    try{ navigator.clipboard.writeText(rows.join("\n")).then(done, function(){ msg.textContent = "Tu navegador no ha permitido copiar. Prueba desde claude.ai en Chrome o Safari."; }); }
+    catch(e){ msg.textContent = "Tu navegador no ha permitido copiar. Prueba desde claude.ai en Chrome o Safari."; }
+  });
+
   function nextN(){ var m=0; Object.keys(state).forEach(function(id){ m=Math.max(m,state[id].n||0); }); return m+1; }
   function addCierre(){
     if(readOnly) return;
@@ -1819,6 +2339,7 @@ button.g-state:hover{filter:brightness(.95)}
       Object.keys(c).forEach(function(id){ if(/^[a-z0-9_-]{1,40}$/i.test(id)) state[id] = norm(c[id], id); });
       gastos = Array.isArray(obj && obj.gastos) ? obj.gastos.map(normGasto).filter(Boolean) : [];
       pagadores = Array.isArray(obj && obj.pagadores) ? obj.pagadores.filter(function(x){ return typeof x==="string" && x.trim(); }).map(function(x){ return x.trim().slice(0,60); }) : [];
+      credito = normCredito(obj && obj.credito);
       saveSession(null);
       readOnly = role !== "admin";
       document.body.classList.toggle("readonly", readOnly);
@@ -1839,10 +2360,14 @@ button.g-state:hover{filter:brightness(.95)}
       if(ui.ct) ctSel = ui.ct;
       if(ui.gf && typeof ui.gf==="object") gFilter = {cierre:String(ui.gf.cierre||""), cat:String(ui.gf.cat||""), estado:String(ui.gf.estado||""), q:String(ui.gf.q||"")};
       if(ui.gd) gRestoreDraft(ui.gd);
+      if(ui.cd) crPendingDraft = ui.cd;
+      if(ui.co && typeof ui.co==="object") Object.keys(ui.co).forEach(function(k){ if(/^\d{4}-\d{2}$/.test(k) && ui.co[k]) crOpen[k] = true; });
     }
     gResetForm();
+    crResetForm();
     renderAll();
     gApplyDraft();
+    crApplyDraft();
     if(role==="admin") renderUsers();
     showView((ui && ui.view) || location.hash.slice(1) || "calendario", true);
     if(ui) setTimeout(function(){
