@@ -525,7 +525,7 @@ button.g-state:hover{filter:brightness(.95)}
               </div>
               <div class="field"><label for="g-concepto">Concepto</label><input class="inp" id="g-concepto" type="text" maxlength="160" placeholder="Ej.: Honorarios revisión contrato de traspaso"></div>
               <div class="row2">
-                <div class="field"><label for="g-prov">Proveedor</label><input class="inp" id="g-prov" type="text" maxlength="120"></div>
+                <div class="field"><label for="g-prov">Proveedor</label><input class="inp" id="g-prov" type="text" maxlength="120" list="gProvs" autocomplete="off" placeholder="Escribe para ver los ya usados"></div>
                 <div class="field"><label for="g-fact">Nº de factura</label><input class="inp" id="g-fact" type="text" maxlength="60"></div>
               </div>
               <div class="row2">
@@ -537,6 +537,7 @@ button.g-state:hover{filter:brightness(.95)}
                 <div class="field"><label for="g-pagador">Pagado por</label><select class="inp" id="g-pagador"></select></div>
                 <div class="field"><label for="g-estado">Estado</label><select class="inp" id="g-estado"><option value="pagado">Pagado</option><option value="pend">Pendiente de pago</option></select></div>
               </div>
+              <datalist id="gProvs"></datalist>
               <div class="g-newpag" id="gNewPagRow" hidden>
                 <div class="field"><label for="g-newpag">Nuevo pagador</label><input class="inp" id="g-newpag" type="text" maxlength="60" placeholder="Nombre o razón social"></div>
                 <div class="g-btns"><button class="btn btn-ghost" id="gNewPagAdd" type="button">Añadir a la lista</button><button class="btn btn-ghost" id="gNewPagCancel" type="button">Cancelar</button></div>
@@ -1422,6 +1423,31 @@ button.g-state:hover{filter:brightness(.95)}
     sel.value = (v && v!==G_NEW) ? (gFindPagador(v) || v) : l[0];
     $("gNewPagRow").hidden = true;
   }
+  /* Proveedores ya usados: una sola forma de escribir cada uno (la más usada; a igualdad, la más reciente). */
+  function gKey(x){ return String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim(); }
+  function gProvMap(){
+    var m = {};
+    gSorted(gastos).slice().reverse().forEach(function(g){
+      var k = gKey(g.prov); if(!k) return;
+      var e = m[k] || (m[k] = {n:0, spell:{}, last:""});
+      e.n++; e.spell[g.prov] = (e.spell[g.prov]||0) + 1; e.last = g.prov;
+    });
+    var out = {};
+    Object.keys(m).forEach(function(k){
+      var e = m[k], best = e.last;
+      Object.keys(e.spell).forEach(function(sp){ if(e.spell[sp] > e.spell[best]) best = sp; });
+      out[k] = {name: best, n: e.n};
+    });
+    return out;
+  }
+  function gFillProvs(){
+    var m = gProvMap(), dl = $("gProvs");
+    var list = Object.keys(m).map(function(k){ return m[k]; }).sort(function(a,b){ return b.n-a.n || a.name.localeCompare(b.name,"es"); });
+    dl.textContent = "";
+    list.forEach(function(e){ var op = el("option"); op.value = e.name; dl.append(op); });
+  }
+  function gCanonProv(v){ var k = gKey(v); if(!k) return ""; var e = gProvMap()[k]; return e ? e.name : String(v).trim().replace(/\s+/g," "); }
+
   function gAddPagador(){
     var name = $("g-newpag").value.trim().replace(/\s+/g," ");
     if(!name){ $("g-newpag").focus(); return; }
@@ -1490,6 +1516,7 @@ button.g-state:hover{filter:brightness(.95)}
     if(!$("g-cat").options.length) gFillSelect($("g-cat"), G_CATS, "legal");
     var cur = $("g-cierre").value; gFillSelect($("g-cierre"), gCierreOpts(), cur);
     $("gFormPanel").hidden = readOnly;
+    gFillProvs();
 
     // KPIs (todos los gastos)
     var box = $("gKpis"); box.textContent = "";
@@ -1652,6 +1679,7 @@ button.g-state:hover{filter:brightness(.95)}
   $("gNewPagAdd").addEventListener("click", gAddPagador);
   $("g-newpag").addEventListener("keydown", function(ev){ if(ev.key==="Enter"){ ev.preventDefault(); gAddPagador(); } if(ev.key==="Escape"){ ev.preventDefault(); gSetPagador(G_PAGADORES[0]); $("g-pagador").focus(); } });
   $("gNewPagCancel").addEventListener("click", function(){ gSetPagador(G_PAGADORES[0]); $("g-pagador").focus(); });
+  $("g-prov").addEventListener("blur", function(){ var c = gCanonProv(this.value); if(c!==this.value) this.value = c; });
   $("g-total").addEventListener("input", gPreview);
   $("g-iva").addEventListener("change", gPreview);
   $("g-total").addEventListener("blur", function(){ var p = parseNum($("g-total").value); if(p.ok && p.v!=null) $("g-total").value = fmt2(p.v); });
@@ -1667,7 +1695,7 @@ button.g-state:hover{filter:brightness(.95)}
     if($("g-pagador").value===G_NEW){ err.textContent = "Añade el nuevo pagador a la lista o elige uno existente."; $("g-newpag").focus(); return; }
     var g = normGasto({
       id: gEditing || ("g"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
-      fecha: fecha, concepto: concepto, prov: $("g-prov").value.trim(), fact: $("g-fact").value.trim(),
+      fecha: fecha, concepto: concepto, prov: gCanonProv($("g-prov").value), fact: $("g-fact").value.trim(),
       cat: $("g-cat").value, cierre: $("g-cierre").value, total: p.v, iva: Number($("g-iva").value),
       pagador: $("g-pagador").value, estado: $("g-estado").value, notas: $("g-notas").value.trim()
     });
