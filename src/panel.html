@@ -532,10 +532,9 @@ button.g-state:hover{filter:brightness(.95)}
               </div>
               <div class="field"><label for="g-cierre">Asignado a</label><select class="inp" id="g-cierre"></select></div>
               <div class="row2">
-                <div class="field"><label for="g-pagador">Pagado por</label><input class="inp" id="g-pagador" type="text" maxlength="60" list="gPagadores"></div>
+                <div class="field"><label for="g-pagador">Pagado por</label><select class="inp" id="g-pagador"><option>AVYNA COSMETICOS SL</option><option>JAFET ALEJANDRO ABREU</option><option>JOSE ISRAEL RUIZ</option><option>OTROS</option></select></div>
                 <div class="field"><label for="g-estado">Estado</label><select class="inp" id="g-estado"><option value="pagado">Pagado</option><option value="pend">Pendiente de pago</option></select></div>
               </div>
-              <datalist id="gPagadores"><option value="MADA Salones SL"><option value="AVYNA Cosméticos SL"><option value="Israel"><option value="Jafet"></datalist>
               <div class="field"><label for="g-notas">Notas</label><textarea id="g-notas" maxlength="1000" rows="2"></textarea></div>
               <p class="g-preview" id="gPreview"></p>
               <p class="form-err" id="gErr" role="alert"></p>
@@ -1398,6 +1397,14 @@ button.g-state:hover{filter:brightness(.95)}
   ];
   var G_CAT_NAME = {}; G_CATS.forEach(function(c){ G_CAT_NAME[c[0]] = c[1]; });
   var G_IVAS = [21,10,4,0];
+  var G_PAGADORES = ["AVYNA COSMETICOS SL","JAFET ALEJANDRO ABREU","JOSE ISRAEL RUIZ","OTROS"];
+  /* Un gasto antiguo con otro pagador conserva su valor como opción extra mientras se edita. */
+  function gSetPagador(v){
+    var sel = $("g-pagador");
+    Array.prototype.slice.call(sel.options).forEach(function(o){ if(G_PAGADORES.indexOf(o.value)<0) o.remove(); });
+    if(v && G_PAGADORES.indexOf(v)<0){ var op = el("option", null, v); op.value = v; sel.append(op); }
+    sel.value = v || G_PAGADORES[0];
+  }
   var gFilter = {cierre:"", cat:"", estado:"", q:""}, gEditing = null, gConfirmDel = null;
 
   function normGasto(g){
@@ -1579,7 +1586,7 @@ button.g-state:hover{filter:brightness(.95)}
     gEditing = null;
     $("g-fecha").value = isoOf(new Date()); $("g-total").value = ""; $("g-concepto").value = ""; $("g-prov").value = "";
     $("g-fact").value = ""; $("g-cat").value = $("g-cat").value || "legal"; $("g-iva").value = "21"; $("g-cierre").value = c;
-    $("g-pagador").value = $("g-pagador").value || "MADA Salones SL"; $("g-estado").value = "pagado"; $("g-notas").value = "";
+    gSetPagador($("g-pagador").value || G_PAGADORES[0]); $("g-estado").value = "pagado"; $("g-notas").value = "";
     $("gErr").textContent = ""; $("gPreview").textContent = "";
     $("gFormTitle").textContent = "Añadir gasto"; $("gSubmit").textContent = "Añadir gasto"; $("gCancel").hidden = true;
   }
@@ -1588,7 +1595,7 @@ button.g-state:hover{filter:brightness(.95)}
     gEditing = id; gConfirmDel = null;
     $("g-fecha").value = g.fecha; $("g-total").value = fmt2(g.total); $("g-concepto").value = g.concepto; $("g-prov").value = g.prov;
     $("g-fact").value = g.fact; $("g-cat").value = g.cat; $("g-iva").value = String(g.iva); $("g-cierre").value = g.cierre;
-    $("g-pagador").value = g.pagador; $("g-estado").value = g.estado; $("g-notas").value = g.notas; $("gErr").textContent = "";
+    gSetPagador(g.pagador); $("g-estado").value = g.estado; $("g-notas").value = g.notas; $("gErr").textContent = "";
     $("gFormTitle").textContent = "Editar gasto"; $("gSubmit").textContent = "Guardar cambios"; $("gCancel").hidden = false;
     gPreview(); renderGastos();
     $("gFormPanel").scrollIntoView({block:"nearest"}); $("g-concepto").focus();
@@ -1604,7 +1611,7 @@ button.g-state:hover{filter:brightness(.95)}
   function gApplyDraft(){
     var d = gPendingDraft; gPendingDraft = null; if(!d) return;
     renderGastos();
-    G_FIELDS.forEach(function(f){ if(typeof d[f]==="string"){ $(f).value = d[f]; } });
+    G_FIELDS.forEach(function(f){ if(typeof d[f]==="string"){ if(f==="g-pagador") gSetPagador(d[f]); else $(f).value = d[f]; } });
     if(d.editing && gastos.some(function(x){ return x.id===d.editing; })){
       gEditing = d.editing; $("gFormTitle").textContent = "Editar gasto"; $("gSubmit").textContent = "Guardar cambios"; $("gCancel").hidden = false;
       renderGastos();
@@ -1628,7 +1635,7 @@ button.g-state:hover{filter:brightness(.95)}
       id: gEditing || ("g"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
       fecha: fecha, concepto: concepto, prov: $("g-prov").value.trim(), fact: $("g-fact").value.trim(),
       cat: $("g-cat").value, cierre: $("g-cierre").value, total: p.v, iva: Number($("g-iva").value),
-      pagador: $("g-pagador").value.trim(), estado: $("g-estado").value, notas: $("g-notas").value.trim()
+      pagador: $("g-pagador").value, estado: $("g-estado").value, notas: $("g-notas").value.trim()
     });
     var editing = gEditing;
     if(editing) gastos = gastos.map(function(x){ return x.id===editing ? g : x; });
