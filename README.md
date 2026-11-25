@@ -7,6 +7,7 @@ Módulos:
 - **Calendario**: vista mensual con las fechas límite de todas las etapas.
 - **Cierres**: una tarjeta por salón con sus etapas y precios.
 - **Cuentas**: cuenta de resultados de los últimos 12 meses de cada cierre (ingresos, gastos de personal, de local y de explotación). Calcula totales, IVA (21 % incluido en los ingresos), utilidad, margen y años para recuperar el traspaso. Las cabeceras de los meses son editables y admite pegar bloques desde Excel.
+- **Gastos**: registro de los gastos del proyecto (abogados, notaría, tasaciones, señales…), asignados a un cierre o generales. Calcula base e IVA, pendiente de pago, gasto en cierres caídos y reparto por categoría, cierre y pagador. Se puede copiar a Excel. Los gastos de cada cierre se suman a su inversión en Cuentas.
 - **Usuarios** (solo administradores): alta y baja de usuarios del panel.
 
 Publicado como artefacto de Claude: https://claude.ai/artifact/6Q6ubdoKkcAVkMa2BXPdoc

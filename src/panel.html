@@ -186,7 +186,9 @@ button,input{font:inherit;color:inherit}
 .readonly .salon,.readonly .money,.readonly .date{pointer-events:none}
 
 /* Tabs */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;flex:none}
 .tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 14px 9px;font-weight:600;color:var(--muted);cursor:pointer;margin-bottom:-1px}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
@@ -334,6 +336,51 @@ tr.calc.util th.c-con{font-family:var(--font-display);font-size:18px;letter-spac
 td.neg{color:var(--bad)}
 tr.calc.util td.neg{color:#ffd4d0}
 .ct-empty{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:16px}
+
+/* Gastos */
+.g-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:980px){.g-layout{grid-template-columns:minmax(0,1fr)}}
+.g-layout>*{min-width:0}
+.g-side{display:flex;flex-direction:column;gap:16px}
+.g-filters{display:flex;flex-wrap:wrap;gap:8px}
+.g-filters .inp{width:auto;flex:1 1 150px;padding:7px 10px;font-size:14px}
+.g-filters .g-q{flex:2 1 200px}
+table.gt{border-collapse:separate;border-spacing:0;width:100%;min-width:640px;font-size:13.5px}
+table.gt td:first-child{white-space:nowrap}
+.g-preview:empty,#gErr:empty,#gCopyMsg:empty{display:none}
+table.gt th,table.gt td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left;vertical-align:top}
+table.gt thead th{background:var(--ink);color:var(--bg);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+table.gt td.n,table.gt th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.gt tbody tr:hover td{background:var(--bg)}
+table.gt tbody tr.editing td{background:var(--accent-soft)}
+table.gt tfoot td{background:var(--neutral-soft);font-weight:700;border-bottom:none}
+.g-con{font-weight:600}
+.g-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.g-sub{font-size:12px;color:var(--muted);font-weight:400}
+.g-acts{white-space:nowrap;text-align:right}
+.g-acts button{display:block;margin-left:auto;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px}
+.g-acts .confirm{flex-direction:column;align-items:flex-end}
+.g-acts button:hover{color:var(--ink);text-decoration:underline}
+.g-acts button.danger:hover{color:var(--bad)}
+.g-state{border:none;font:inherit;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap;background:var(--ok-soft);color:var(--ok)}
+.g-state[data-st="pend"]{background:var(--warn-soft);color:var(--warn)}
+button.g-state{cursor:pointer}
+button.g-state:hover{filter:brightness(.95)}
+.g-empty{padding:24px;text-align:center;color:var(--muted)}
+.g-form textarea{width:100%;min-height:56px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px 12px;font:inherit;color:var(--ink)}
+.g-form textarea:focus{border-color:var(--accent);outline:none;background:var(--surface)}
+.g-preview{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;margin:0}
+.g-btns{display:flex;gap:8px;flex-wrap:wrap}
+.g-break h3{margin:6px 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.g-bars{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.g-bar{width:100%;border:none;background:none;padding:4px 6px;margin:0 -6px;border-radius:8px;cursor:pointer;text-align:left;display:grid;grid-template-columns:1fr auto;gap:2px 10px;font:inherit;color:var(--ink)}
+.g-bar:hover{background:var(--bg)}
+.g-bar[aria-pressed="true"]{background:var(--accent-soft)}
+.g-bar .l{font-size:13.5px;min-width:0;overflow-wrap:anywhere}
+.g-bar .v{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.g-bar .t{grid-column:1/-1;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.g-bar .t i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.g-bar.caido .t i{background:var(--muted)}
 </style>
 </head>
 <body>
@@ -395,6 +442,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     <button class="tab" role="tab" id="tab-calendario" aria-controls="view-calendario" aria-selected="true" type="button">Calendario</button>
     <button class="tab" role="tab" id="tab-cierres" aria-controls="view-cierres" aria-selected="false" type="button">Cierres</button>
     <button class="tab" role="tab" id="tab-cuentas" aria-controls="view-cuentas" aria-selected="false" type="button">Cuentas</button>
+    <button class="tab" role="tab" id="tab-gastos" aria-controls="view-gastos" aria-selected="false" type="button">Gastos</button>
     <button class="tab" role="tab" id="tab-usuarios" aria-controls="view-usuarios" aria-selected="false" type="button" hidden>Usuarios</button>
   </nav>
 
@@ -440,6 +488,65 @@ tr.calc.util td.neg{color:#ffd4d0}
         </div>
         <div class="ct-scroll" id="ctScroll"><table class="ct" id="ctTable"></table></div>
         <p class="form-note">Los totales, el IVA (21 % incluido en los ingresos), el total de gastos y la utilidad se calculan solos. Puedes pegar una fila o un bloque copiado de Excel: se rellena hacia la derecha y hacia abajo desde la celda donde pegues.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-gastos" role="tabpanel" aria-labelledby="tab-gastos" hidden>
+    <div class="ct-wrap">
+      <div class="ct-kpis" id="gKpis"></div>
+      <div class="g-layout">
+        <div class="panel">
+          <div class="ct-head">
+            <div>
+              <h2>Gastos del proyecto</h2>
+              <p class="form-note" id="gSub">–</p>
+            </div>
+            <button class="btn btn-ghost" id="gCopy" type="button">Copiar para Excel</button>
+          </div>
+          <div class="g-filters" role="group" aria-label="Filtros">
+            <select class="inp" id="gfCierre" aria-label="Filtrar por cierre"></select>
+            <select class="inp" id="gfCat" aria-label="Filtrar por categoría"></select>
+            <select class="inp" id="gfEstado" aria-label="Filtrar por estado"><option value="">Pagados y pendientes</option><option value="pagado">Solo pagados</option><option value="pend">Solo pendientes</option></select>
+            <input class="inp g-q" id="gfQ" type="search" placeholder="Buscar concepto, proveedor o factura" aria-label="Buscar gasto" autocomplete="off">
+          </div>
+          <p class="form-note" id="gCopyMsg" role="status"></p>
+          <div class="ct-scroll"><table class="gt" id="gTable"></table></div>
+        </div>
+        <aside class="g-side">
+          <div class="panel" id="gFormPanel">
+            <h2 id="gFormTitle">Añadir gasto</h2>
+            <form id="gForm" class="g-form" autocomplete="off" novalidate>
+              <div class="row2">
+                <div class="field"><label for="g-fecha">Fecha</label><input class="inp" id="g-fecha" type="date"></div>
+                <div class="field"><label for="g-total">Importe total (con IVA)</label><input class="inp money" id="g-total" type="text" inputmode="decimal" placeholder="0,00 €"></div>
+              </div>
+              <div class="field"><label for="g-concepto">Concepto</label><input class="inp" id="g-concepto" type="text" maxlength="160" placeholder="Ej.: Honorarios revisión contrato de traspaso"></div>
+              <div class="row2">
+                <div class="field"><label for="g-prov">Proveedor</label><input class="inp" id="g-prov" type="text" maxlength="120"></div>
+                <div class="field"><label for="g-fact">Nº de factura</label><input class="inp" id="g-fact" type="text" maxlength="60"></div>
+              </div>
+              <div class="row2">
+                <div class="field"><label for="g-cat">Categoría</label><select class="inp" id="g-cat"></select></div>
+                <div class="field"><label for="g-iva">IVA</label><select class="inp" id="g-iva"><option value="21">21 %</option><option value="10">10 %</option><option value="4">4 %</option><option value="0">Sin IVA / exento</option></select></div>
+              </div>
+              <div class="field"><label for="g-cierre">Asignado a</label><select class="inp" id="g-cierre"></select></div>
+              <div class="row2">
+                <div class="field"><label for="g-pagador">Pagado por</label><input class="inp" id="g-pagador" type="text" maxlength="60" list="gPagadores"></div>
+                <div class="field"><label for="g-estado">Estado</label><select class="inp" id="g-estado"><option value="pagado">Pagado</option><option value="pend">Pendiente de pago</option></select></div>
+              </div>
+              <datalist id="gPagadores"><option value="MADA Salones SL"><option value="AVYNA Cosméticos SL"><option value="Israel"><option value="Jafet"></datalist>
+              <div class="field"><label for="g-notas">Notas</label><textarea id="g-notas" maxlength="1000" rows="2"></textarea></div>
+              <p class="g-preview" id="gPreview"></p>
+              <p class="form-err" id="gErr" role="alert"></p>
+              <div class="g-btns">
+                <button class="btn btn-primary" id="gSubmit" type="submit">Añadir gasto</button>
+                <button class="btn btn-ghost" id="gCancel" type="button" hidden>Cancelar edición</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel g-break" id="gBreak"></div>
+        </aside>
       </div>
     </div>
   </section>
@@ -500,7 +607,7 @@ tr.calc.util td.neg{color:#ffd4d0}
   var EUR = new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0,useGrouping:"always"});
   var DF = new Intl.DateTimeFormat("es-ES",{day:"2-digit",month:"short",year:"numeric"});
 
-  var state = {}, cards = {};
+  var state = {}, cards = {}, gastos = [];
   var readOnly = true, loaded = false, me = null, role = null, dataKey = null;
   var grid = document.getElementById("grid");
 
@@ -634,7 +741,7 @@ tr.calc.util td.neg{color:#ffd4d0}
   }
   function encryptState(){
     var plain = {}; Object.keys(state).forEach(function(id){ plain[id] = state[id]; });
-    return aesKey(dataKey).then(function(k){ return seal(k, te.encode(JSON.stringify({cierres:plain}))); });
+    return aesKey(dataKey).then(function(k){ return seal(k, te.encode(JSON.stringify({cierres:plain, gastos:gastos}))); });
   }
 
   /* ---------- rebuilding the page ---------- */
@@ -680,7 +787,8 @@ tr.calc.util td.neg{color:#ffd4d0}
   function uiState(){
     var a = document.activeElement, sc = $("ctScroll");
     return {view:currentView, sel:cal.sel, y:cal.y, m:cal.m, scroll:window.scrollY, ct:ctSel,
-            ctx: sc ? sc.scrollLeft : 0, focus: (a && a.id && /^(ct-|mes-)/.test(a.id)) ? a.id : null};
+            ctx: sc ? sc.scrollLeft : 0, focus: (a && a.id && /^(ct-|mes-|g-|gf)/.test(a.id)) ? a.id : null,
+            gf: gFilter, gd: gDraft()};
   }
   function doSave(){
     if(saving || readOnly) return Promise.resolve(false);
@@ -911,6 +1019,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     $("addTop").hidden = readOnly;
     renderSummary();
     renderCuentas();
+    renderGastos();
   }
 
   function renderSummary(){
@@ -940,6 +1049,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     } else { $("sNext").textContent = "–"; $("sNextWhat").textContent = "Pon fechas límite en las etapas pendientes"; }
     renderCalendar();
     renderCuentas();
+    renderGastos();
   }
 
   /* ---------- calendar ---------- */
@@ -1060,11 +1170,11 @@ tr.calc.util td.neg{color:#ffd4d0}
 
   /* ---------- tabs ---------- */
   var currentView = "calendario";
-  function views(){ return role==="admin" ? ["calendario","cierres","cuentas","usuarios"] : ["calendario","cierres","cuentas"]; }
+  function views(){ return role==="admin" ? ["calendario","cierres","cuentas","gastos","usuarios"] : ["calendario","cierres","cuentas","gastos"]; }
   function showView(name, fromHash){
     var vs = views(); if(vs.indexOf(name)<0) name = "calendario";
     currentView = name;
-    ["calendario","cierres","cuentas","usuarios"].forEach(function(v){
+    ["calendario","cierres","cuentas","gastos","usuarios"].forEach(function(v){
       var on = v===name;
       $("tab-"+v).setAttribute("aria-selected", on ? "true" : "false");
       $("tab-"+v).tabIndex = on ? 0 : -1;
@@ -1072,7 +1182,7 @@ tr.calc.util td.neg{color:#ffd4d0}
     });
     if(!fromHash){ try{ history.replaceState(null,"","#"+name); }catch(e){ location.hash = name; } }
   }
-  ["calendario","cierres","cuentas","usuarios"].forEach(function(v){
+  ["calendario","cierres","cuentas","gastos","usuarios"].forEach(function(v){
     var t = $("tab-"+v);
     t.addEventListener("click", function(){ showView(v); });
     t.addEventListener("keydown", function(ev){
@@ -1254,11 +1364,13 @@ tr.calc.util td.neg{color:#ffd4d0}
     tile("Gastos", EUR.format(gas), "Media "+EUR.format(gas/meses)+" al mes");
     tile("Utilidad", EUR.format(util), "Media "+EUR.format(util/meses)+" al mes", util<0 ? "neg" : "pos");
     tile("Margen", neto ? String(Math.round(util/neto*1000)/10).replace(".",",")+" %" : "–", "Utilidad sobre ingresos netos", util<0 ? "neg" : null);
-    var precio = d.real!=null ? d.real : d.pedido, anual = util/meses*12;
+    var precio = d.real!=null ? d.real : d.pedido, anual = util/meses*12, gx = gastosBaseDe(ctSel);
     if(precio!=null){
-      var pay = anual>0 ? precio/anual : null;
-      tile("Recuperación del traspaso", pay ? String(Math.round(pay*10)/10).replace(".",",")+" años" : "No se recupera",
-           (d.real!=null ? "Con el traspaso real (" : "Con el traspaso pedido (")+EUR.format(precio)+")", pay ? null : "neg");
+      var inv = precio + gx, pay = anual>0 ? inv/anual : null;
+      tile("Recuperación de la inversión", pay ? String(Math.round(pay*10)/10).replace(".",",")+" años" : "No se recupera",
+           (d.real!=null ? "Traspaso real " : "Traspaso pedido ")+EUR.format(precio)+(gx ? " + gastos "+EUR.format(gx)+" (sin IVA)" : ""), pay ? null : "neg");
+    } else if(gx){
+      tile("Gastos asignados", EUR.format(gx), "Sin IVA. Falta el precio del traspaso para calcular la recuperación");
     }
   }
 
@@ -1267,6 +1379,288 @@ tr.calc.util td.neg{color:#ffd4d0}
     var p = v.split("-").map(Number);
     state[ctSel].cuentas.meses = mesesDesde(p[0], p[1]-1);
     ctUpdate(); markDirty(); flushSoon();
+  });
+
+  /* ---------- Gastos ---------- */
+  var G_CATS = [
+    ["legal","Abogados y asesoría legal"],
+    ["gestoria","Gestoría y contabilidad"],
+    ["notaria","Notaría y registros"],
+    ["impuestos","Impuestos, tasas y licencias"],
+    ["sociedad","Constitución de la sociedad"],
+    ["tasacion","Tasación y due diligence"],
+    ["senal","Señales y fianzas"],
+    ["obras","Reformas y obras"],
+    ["equipo","Mobiliario y equipamiento"],
+    ["marketing","Marketing y comunicación"],
+    ["viajes","Desplazamientos y dietas"],
+    ["otros","Otros"]
+  ];
+  var G_CAT_NAME = {}; G_CATS.forEach(function(c){ G_CAT_NAME[c[0]] = c[1]; });
+  var G_IVAS = [21,10,4,0];
+  var gFilter = {cierre:"", cat:"", estado:"", q:""}, gEditing = null, gConfirmDel = null;
+
+  function normGasto(g){
+    if(!g || typeof g!=="object") return null;
+    var total = typeof g.total==="number" && isFinite(g.total) ? r2(g.total) : null;
+    if(total==null || typeof g.id!=="string" || !/^[a-z0-9_-]{1,40}$/i.test(g.id)) return null;
+    function str(x, n){ return typeof x==="string" ? x.slice(0,n) : ""; }
+    return {
+      id: g.id,
+      fecha: (typeof g.fecha==="string" && /^\d{4}-\d{2}-\d{2}$/.test(g.fecha)) ? g.fecha : "",
+      concepto: str(g.concepto,160), prov: str(g.prov,120), fact: str(g.fact,60),
+      cat: G_CAT_NAME[g.cat] ? g.cat : "otros",
+      cierre: (typeof g.cierre==="string" && /^[a-z0-9_-]{0,40}$/i.test(g.cierre)) ? g.cierre : "",
+      total: total, iva: G_IVAS.indexOf(g.iva)>=0 ? g.iva : 21,
+      pagador: str(g.pagador,60), estado: g.estado==="pend" ? "pend" : "pagado",
+      notas: str(g.notas,1000)
+    };
+  }
+  function gBase(g){ return r2(g.total/(1+g.iva/100)); }
+  function gCuota(g){ return r2(g.total - gBase(g)); }
+  function gastosBaseDe(id){ var t=0; gastos.forEach(function(g){ if(g.cierre===id) t+=gBase(g); }); return r2(t); }
+  function gCierreName(id){
+    if(!id) return "General del proyecto";
+    return state[id] ? ctLabel(state[id]) : "Cierre eliminado";
+  }
+  function gSorted(list){ return list.slice().sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:(a.id<b.id?1:-1); }); }
+  function gMatches(g){
+    if(gFilter.cierre){ if(gFilter.cierre==="__gen"){ if(g.cierre) return false; } else if(g.cierre!==gFilter.cierre) return false; }
+    if(gFilter.cat && g.cat!==gFilter.cat) return false;
+    if(gFilter.estado && g.estado!==gFilter.estado) return false;
+    var q = gFilter.q.trim().toLowerCase();
+    if(q && (g.concepto+" "+g.prov+" "+g.fact+" "+g.notas+" "+g.pagador).toLowerCase().indexOf(q)<0) return false;
+    return true;
+  }
+  function eur2(v){ return fmt2(v)+" €"; }
+
+  function gFillSelect(sel, opts, value){
+    var keep = value!=null ? value : sel.value;
+    sel.textContent = "";
+    opts.forEach(function(o){ var op = el("option", null, o[1]); op.value = o[0]; sel.append(op); });
+    sel.value = keep; if(sel.value!==keep) sel.value = opts.length ? opts[0][0] : "";
+  }
+  function gCierreOpts(){
+    var o = [["","General del proyecto"]];
+    sortedIds().forEach(function(id){ o.push([id, ctLabel(state[id])]); });
+    return o;
+  }
+
+  function renderGastos(){
+    if(!loaded || !$("gTable")) return;
+    // selects
+    var fc = [["","Todos los cierres"],["__gen","General del proyecto"]].concat(gCierreOpts().slice(1));
+    gFillSelect($("gfCierre"), fc, gFilter.cierre);
+    gFillSelect($("gfCat"), [["","Todas las categorías"]].concat(G_CATS), gFilter.cat);
+    $("gfEstado").value = gFilter.estado;
+    if(document.activeElement!==$("gfQ")) $("gfQ").value = gFilter.q;
+    if(!$("g-cat").options.length) gFillSelect($("g-cat"), G_CATS, "legal");
+    var cur = $("g-cierre").value; gFillSelect($("g-cierre"), gCierreOpts(), cur);
+    $("gFormPanel").hidden = readOnly;
+
+    // KPIs (todos los gastos)
+    var box = $("gKpis"); box.textContent = "";
+    function tile(k, v, sub, cls){ var t=el("div","tile"); t.append(el("span","k",k)); var vv=el("span","v",v); if(cls) vv.classList.add(cls); t.append(vv, el("span","s",sub)); box.append(t); }
+    var tot=0, base=0, cuota=0, pend=0, nPend=0, caido=0;
+    gastos.forEach(function(g){
+      tot+=g.total; base+=gBase(g); cuota+=gCuota(g);
+      if(g.estado==="pend"){ pend+=g.total; nPend++; }
+      if(g.cierre && state[g.cierre] && state[g.cierre].caido) caido+=gBase(g);
+    });
+    tile("Total gastado", EUR.format(tot), gastos.length+(gastos.length===1?" gasto":" gastos")+" · "+EUR.format(base)+" sin IVA");
+    tile("IVA soportado", EUR.format(cuota), "Deducible si la factura es a nombre de la sociedad");
+    tile("Pendiente de pago", EUR.format(pend), nPend ? nPend+(nPend===1?" gasto pendiente":" gastos pendientes") : "Todo pagado", nPend ? "neg" : null);
+    tile("En cierres caídos", EUR.format(r2(caido)), "Sin IVA. Coste de operaciones que no salieron");
+
+    // tabla
+    var list = gSorted(gastos.filter(gMatches)), tbl = $("gTable");
+    tbl.textContent = "";
+    $("gSub").textContent = gastos.length ? (list.length===gastos.length ? "Todos los gastos, del más reciente al más antiguo." : "Mostrando "+list.length+" de "+gastos.length+" gastos.") : "Todavía no hay gastos registrados.";
+    var thead = el("thead"), hr = el("tr");
+    [["Fecha"],["Concepto"],["Categoría"],["Asignado a"],["Estado"],["Total","n"],[""]].forEach(function(h){ var th=el("th",h[1]||null,h[0]); th.scope="col"; hr.append(th); });
+    thead.append(hr); tbl.append(thead);
+    var tb = el("tbody");
+    if(!list.length){
+      var tr0 = el("tr"), td0 = el("td","g-empty", gastos.length ? "Ningún gasto coincide con los filtros." : (readOnly ? "Todavía no hay gastos." : "Añade el primer gasto con el formulario."));
+      td0.colSpan = 7; tr0.append(td0); tb.append(tr0);
+    }
+    var sB=0, sI=0, sT=0;
+    list.forEach(function(g){
+      sB+=gBase(g); sI+=gCuota(g); sT+=g.total;
+      var tr = el("tr"); if(gEditing===g.id) tr.classList.add("editing");
+      tr.append(el("td",null, g.fecha ? fmtDate(g.fecha) : "–"));
+      var tc = el("td"); tc.append(el("div","g-con", g.concepto||"(sin concepto)"));
+      var meta = [g.prov, g.fact ? "Fra. "+g.fact : ""].filter(Boolean).join(" · ");
+      if(meta) tc.append(el("div","g-meta",meta));
+      if(g.notas) tc.append(el("div","g-meta",g.notas));
+      tr.append(tc);
+      tr.append(el("td",null,G_CAT_NAME[g.cat]));
+      var tw = el("td"); tw.append(el("div",null,gCierreName(g.cierre)));
+      if(g.pagador) tw.append(el("div","g-meta","Pagó: "+g.pagador));
+      tr.append(tw);
+      var ts = el("td"), lbl = g.estado==="pend" ? "Pendiente" : "Pagado";
+      if(readOnly){ var sp=el("span","g-state",lbl); sp.dataset.st=g.estado; ts.append(sp); }
+      else {
+        var sb=el("button","g-state",lbl); sb.type="button"; sb.dataset.st=g.estado; sb.id="g-st-"+g.id;
+        sb.title = g.estado==="pend" ? "Marcar como pagado" : "Marcar como pendiente";
+        sb.addEventListener("click", function(){ g.estado = g.estado==="pend" ? "pagado" : "pend"; renderGastos(); markDirty(); flushSoon(); var b=$("g-st-"+g.id); if(b) b.focus(); });
+        ts.append(sb);
+      }
+      tr.append(ts);
+      var tt = el("td","n"); tt.append(el("div","g-con",eur2(g.total)));
+      tt.append(el("div","g-sub", g.iva ? fmt2(gBase(g))+" + "+fmt2(gCuota(g))+" IVA ("+g.iva+" %)" : "Sin IVA"));
+      tr.append(tt);
+      var ta = el("td","g-acts");
+      if(!readOnly){
+        if(gConfirmDel===g.id){
+          var box2 = el("div","confirm"); box2.append(document.createTextNode("¿Eliminar?"));
+          var y = el("button","btn btn-danger","Eliminar"); y.type="button";
+          var n = el("button","btn btn-ghost","No"); n.type="button";
+          y.addEventListener("click", function(){ gastos = gastos.filter(function(x){ return x.id!==g.id; }); if(gEditing===g.id) gResetForm(); gConfirmDel=null; renderAll(); markDirty(); flushSoon(); });
+          n.addEventListener("click", function(){ gConfirmDel=null; renderGastos(); });
+          box2.append(y,n); ta.append(box2); setTimeout(function(){ n.focus(); },0);
+        } else {
+          var e = el("button",null,"Editar"); e.type="button"; e.addEventListener("click", function(){ gEdit(g.id); });
+          var d = el("button","danger","Eliminar"); d.type="button"; d.addEventListener("click", function(){ gConfirmDel=g.id; renderGastos(); });
+          ta.append(e,d);
+        }
+      }
+      tr.append(ta);
+      tb.append(tr);
+    });
+    tbl.append(tb);
+    if(list.length){
+      var tf = el("tfoot"), fr = el("tr"), lab = el("td",null,"Total"+(list.length!==gastos.length?" filtrado":"")+" · "+list.length+(list.length===1?" gasto":" gastos"));
+      lab.colSpan = 5; var ft = el("td","n"); ft.append(el("div",null,eur2(r2(sT))), el("div","g-sub",fmt2(r2(sB))+" + "+fmt2(r2(sI))+" IVA"));
+      fr.append(lab, ft, el("td"));
+      tf.append(fr); tbl.append(tf);
+    }
+    gRenderBreak();
+  }
+
+  function gRenderBreak(){
+    var box = $("gBreak"); box.textContent = "";
+    box.append(el("h2",null,"Reparto (sin IVA)"));
+    if(!gastos.length){ box.append(el("p","form-note","Aquí verás en qué se va el dinero: por categoría, por cierre y por quién lo pagó.")); return; }
+    function group(title, key, labelOf, filterKey, isCaido){
+      var m = {}; gastos.forEach(function(g){ var k = key(g); m[k] = (m[k]||0) + gBase(g); });
+      var ks = Object.keys(m).sort(function(a,b){ return m[b]-m[a]; }), max = Math.max.apply(null, ks.map(function(k){ return Math.abs(m[k]); })) || 1;
+      box.append(el("h3",null,title));
+      var ul = el("ul","g-bars");
+      ks.forEach(function(k){
+        var li = el("li"), b = el("button","g-bar"); b.type="button";
+        if(isCaido && isCaido(k)) b.classList.add("caido");
+        var on = filterKey && gFilter[filterKey]===(filterKey==="cierre" && k==="" ? "__gen" : k);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+        b.append(el("span","l",labelOf(k)), el("span","v",EUR.format(r2(m[k]))));
+        var t = el("span","t"), i = el("i"); i.style.width = Math.max(2, Math.abs(m[k])/max*100)+"%"; t.append(i); b.append(t);
+        if(filterKey){
+          b.title = on ? "Quitar filtro" : "Filtrar la tabla por esto";
+          b.addEventListener("click", function(){ var v = filterKey==="cierre" && k==="" ? "__gen" : k; gFilter[filterKey] = gFilter[filterKey]===v ? "" : v; renderGastos(); });
+        } else b.disabled = true;
+        li.append(b); ul.append(li);
+      });
+      box.append(ul);
+    }
+    group("Por categoría", function(g){ return g.cat; }, function(k){ return G_CAT_NAME[k]; }, "cat");
+    group("Por cierre", function(g){ return g.cierre; }, gCierreName, "cierre", function(k){ return k && state[k] && state[k].caido; });
+    group("Por quién lo pagó", function(g){ return g.pagador||"Sin indicar"; }, function(k){ return k; }, null);
+  }
+
+  /* formulario */
+  function gPreview(){
+    var p = parseNum($("g-total").value), iva = Number($("g-iva").value);
+    if(!p.ok || p.v==null){ $("gPreview").textContent = ""; return; }
+    var base = r2(p.v/(1+iva/100));
+    $("gPreview").textContent = iva ? "Base "+eur2(base)+" + IVA "+eur2(r2(p.v-base)) : "Sin IVA: "+eur2(p.v);
+  }
+  function gResetForm(keepCierre){
+    var c = keepCierre ? $("g-cierre").value : "";
+    gEditing = null;
+    $("g-fecha").value = isoOf(new Date()); $("g-total").value = ""; $("g-concepto").value = ""; $("g-prov").value = "";
+    $("g-fact").value = ""; $("g-cat").value = $("g-cat").value || "legal"; $("g-iva").value = "21"; $("g-cierre").value = c;
+    $("g-pagador").value = $("g-pagador").value || "MADA Salones SL"; $("g-estado").value = "pagado"; $("g-notas").value = "";
+    $("gErr").textContent = ""; $("gPreview").textContent = "";
+    $("gFormTitle").textContent = "Añadir gasto"; $("gSubmit").textContent = "Añadir gasto"; $("gCancel").hidden = true;
+  }
+  function gEdit(id){
+    var g = gastos.filter(function(x){ return x.id===id; })[0]; if(!g) return;
+    gEditing = id; gConfirmDel = null;
+    $("g-fecha").value = g.fecha; $("g-total").value = fmt2(g.total); $("g-concepto").value = g.concepto; $("g-prov").value = g.prov;
+    $("g-fact").value = g.fact; $("g-cat").value = g.cat; $("g-iva").value = String(g.iva); $("g-cierre").value = g.cierre;
+    $("g-pagador").value = g.pagador; $("g-estado").value = g.estado; $("g-notas").value = g.notas; $("gErr").textContent = "";
+    $("gFormTitle").textContent = "Editar gasto"; $("gSubmit").textContent = "Guardar cambios"; $("gCancel").hidden = false;
+    gPreview(); renderGastos();
+    $("gFormPanel").scrollIntoView({block:"nearest"}); $("g-concepto").focus();
+  }
+  var G_FIELDS = ["g-fecha","g-total","g-concepto","g-prov","g-fact","g-cat","g-iva","g-cierre","g-pagador","g-estado","g-notas"];
+  function gDraft(){
+    if(!$("g-fecha")) return null;
+    var d = {editing:gEditing}; G_FIELDS.forEach(function(f){ d[f] = $(f).value; });
+    return d;
+  }
+  var gPendingDraft = null;
+  function gRestoreDraft(d){ gPendingDraft = d; }
+  function gApplyDraft(){
+    var d = gPendingDraft; gPendingDraft = null; if(!d) return;
+    renderGastos();
+    G_FIELDS.forEach(function(f){ if(typeof d[f]==="string"){ $(f).value = d[f]; } });
+    if(d.editing && gastos.some(function(x){ return x.id===d.editing; })){
+      gEditing = d.editing; $("gFormTitle").textContent = "Editar gasto"; $("gSubmit").textContent = "Guardar cambios"; $("gCancel").hidden = false;
+      renderGastos();
+    }
+    gPreview();
+  }
+
+  $("g-total").addEventListener("input", gPreview);
+  $("g-iva").addEventListener("change", gPreview);
+  $("g-total").addEventListener("blur", function(){ var p = parseNum($("g-total").value); if(p.ok && p.v!=null) $("g-total").value = fmt2(p.v); });
+  $("gCancel").addEventListener("click", function(){ gResetForm(); renderGastos(); });
+  $("gForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    if(readOnly) return;
+    var err = $("gErr"), p = parseNum($("g-total").value), concepto = $("g-concepto").value.trim(), fecha = $("g-fecha").value;
+    err.textContent = "";
+    if(!fecha){ err.textContent = "Indica la fecha del gasto."; $("g-fecha").focus(); return; }
+    if(!concepto){ err.textContent = "Escribe el concepto del gasto."; $("g-concepto").focus(); return; }
+    if(!p.ok || p.v==null || p.v===0){ err.textContent = "Escribe el importe total. Para un abono, ponlo en negativo."; $("g-total").focus(); return; }
+    var g = normGasto({
+      id: gEditing || ("g"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+      fecha: fecha, concepto: concepto, prov: $("g-prov").value.trim(), fact: $("g-fact").value.trim(),
+      cat: $("g-cat").value, cierre: $("g-cierre").value, total: p.v, iva: Number($("g-iva").value),
+      pagador: $("g-pagador").value.trim(), estado: $("g-estado").value, notas: $("g-notas").value.trim()
+    });
+    var editing = gEditing;
+    if(editing) gastos = gastos.map(function(x){ return x.id===editing ? g : x; });
+    else gastos.push(g);
+    gResetForm(true);
+    renderAll(); markDirty(); flushSoon();
+    $("gCopyMsg").textContent = editing ? "Cambios guardados en «"+g.concepto+"»." : "Gasto añadido: «"+g.concepto+"», "+eur2(g.total)+".";
+    $("g-concepto").focus();
+  });
+
+  /* filtros */
+  $("gfCierre").addEventListener("change", function(){ gFilter.cierre = this.value; renderGastos(); });
+  $("gfCat").addEventListener("change", function(){ gFilter.cat = this.value; renderGastos(); });
+  $("gfEstado").addEventListener("change", function(){ gFilter.estado = this.value; renderGastos(); });
+  $("gfQ").addEventListener("input", function(){ gFilter.q = this.value; renderGastos(); });
+
+  /* copiar para Excel */
+  $("gCopy").addEventListener("click", function(){
+    var list = gSorted(gastos.filter(gMatches));
+    function num(v){ return String(r2(v).toFixed(2)).replace(".",","); }
+    function cell(x){ return String(x==null?"":x).replace(/[\t\r\n]+/g," "); }
+    var rows = [["Fecha","Concepto","Proveedor","Nº factura","Categoría","Asignado a","Pagado por","Estado","Base","IVA %","Cuota IVA","Total","Notas"].join("\t")];
+    list.forEach(function(g){
+      var f = g.fecha ? g.fecha.split("-").reverse().join("/") : "";
+      rows.push([f, g.concepto, g.prov, g.fact, G_CAT_NAME[g.cat], gCierreName(g.cierre), g.pagador, g.estado==="pend"?"Pendiente":"Pagado", num(gBase(g)), g.iva, num(gCuota(g)), num(g.total), g.notas].map(cell).join("\t"));
+    });
+    var msg = $("gCopyMsg");
+    if(!list.length){ msg.textContent = "No hay gastos que copiar con estos filtros."; return; }
+    var done = function(){ msg.textContent = "Copiados "+list.length+(list.length===1?" gasto":" gastos")+". Pégalos en Excel o en un correo."; };
+    try{
+      navigator.clipboard.writeText(rows.join("\n")).then(done, function(){ msg.textContent = "Tu navegador no ha permitido copiar. Prueba desde claude.ai en Chrome o Safari."; });
+    }catch(e){ msg.textContent = "Tu navegador no ha permitido copiar. Prueba desde claude.ai en Chrome o Safari."; }
   });
 
   function nextN(){ var m=0; Object.keys(state).forEach(function(id){ m=Math.max(m,state[id].n||0); }); return m+1; }
@@ -1354,6 +1748,7 @@ tr.calc.util td.neg{color:#ffd4d0}
       state = {};
       var c = (obj && obj.cierres) || {};
       Object.keys(c).forEach(function(id){ if(/^[a-z0-9_-]{1,40}$/i.test(id)) state[id] = norm(c[id], id); });
+      gastos = Array.isArray(obj && obj.gastos) ? obj.gastos.map(normGasto).filter(Boolean) : [];
       saveSession(null);
       readOnly = role !== "admin";
       document.body.classList.toggle("readonly", readOnly);
@@ -1372,8 +1767,12 @@ tr.calc.util td.neg{color:#ffd4d0}
       if(typeof ui.y==="number") cal.y = ui.y;
       if(typeof ui.m==="number") cal.m = ui.m;
       if(ui.ct) ctSel = ui.ct;
+      if(ui.gf && typeof ui.gf==="object") gFilter = {cierre:String(ui.gf.cierre||""), cat:String(ui.gf.cat||""), estado:String(ui.gf.estado||""), q:String(ui.gf.q||"")};
+      if(ui.gd) gRestoreDraft(ui.gd);
     }
+    gResetForm();
     renderAll();
+    gApplyDraft();
     if(role==="admin") renderUsers();
     showView((ui && ui.view) || location.hash.slice(1) || "calendario", true);
     if(ui) setTimeout(function(){
