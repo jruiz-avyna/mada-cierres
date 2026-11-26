@@ -305,6 +305,8 @@ select.inp{appearance:auto}
 .ct-head h2{margin:0}
 .ct-fill{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
 .ct-iva{display:flex;flex-direction:column;gap:4px}
+.ct-pdfmsg{display:block;font-weight:600;color:var(--ink)}
+.ct-pdfmsg:empty{display:none}
 .ct-iva-l{font-size:13px;font-weight:600;color:var(--muted)}
 .ivasel{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
 .ivasel button{border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:8px 14px;cursor:pointer}
@@ -528,13 +530,14 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
               <button type="button" id="ctIvaSin" data-v="sin" aria-pressed="false">Sin IVA</button>
             </div>
           </div>
+          <button class="btn btn-ghost" id="ctPdf" type="button" hidden>Descargar PDF</button>
           <div class="ct-fill" id="ctFill">
             <div class="field"><label for="ctFirst">Rellenar meses desde</label><input class="inp" id="ctFirst" type="month"></div>
             <button class="btn btn-ghost" id="ctFillBtn" type="button">Aplicar</button>
           </div>
         </div>
         <div class="ct-scroll" id="ctScroll"><table class="ct" id="ctTable"></table></div>
-        <p class="form-note"><span id="ctNote">Los totales, el IVA (21 % incluido en los ingresos), el total de gastos y la utilidad se calculan solos.</span> Puedes pegar una fila o un bloque copiado de Excel: se rellena hacia la derecha y hacia abajo desde la celda donde pegues.</p>
+        <p class="form-note"><span class="ct-pdfmsg" id="ctPdfMsg" role="status"></span><span id="ctNote">Los totales, el IVA (21 % incluido en los ingresos), el total de gastos y la utilidad se calculan solos.</span> Puedes pegar una fila o un bloque copiado de Excel: se rellena hacia la derecha y hacia abajo desde la celda donde pegues.</p>
       </div>
     </div>
   </section>
@@ -1534,6 +1537,189 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
       c.iva = v; ctUpdate(); markDirty(); flushSoon();
       $(id).focus();
     });
+  });
+
+
+  /* ---------- PDF de la cuenta de resultados (A4 apaisado, generado en la página) ---------- */
+  var downloadsReady = new Promise(function(resolve){
+    var tries = 0;
+    (function wait(){
+      if(window.claude && typeof window.claude.use === "function"){ window.claude.use("downloads").then(resolve, function(){ resolve(null); }); return; }
+      if(++tries > 150){ resolve(null); return; }
+      setTimeout(wait, 100);
+    })();
+  });
+  downloadsReady.then(function(dl){ $("ctPdf").hidden = !dl; });
+
+  // Anchos de Helvetica y Helvetica-Bold (AFM, caracteres 32–126)
+  var PDF_W = {
+    R: "278 278 355 556 556 889 667 191 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 278 278 584 584 584 556 1015 667 667 722 722 667 611 778 722 278 500 667 556 833 722 778 667 778 722 667 611 722 667 944 667 667 611 278 278 278 469 556 333 556 556 500 556 556 278 556 556 222 222 500 222 833 556 556 556 556 333 500 278 556 500 722 500 500 500 334 260 334 584".split(" ").map(Number),
+    B: "278 333 474 556 556 889 722 238 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 333 333 584 584 584 611 975 722 722 722 722 667 611 778 722 278 556 722 611 833 722 778 667 778 722 667 611 722 667 944 667 667 611 333 278 333 584 556 333 556 611 556 611 556 333 611 611 278 278 556 278 889 611 611 611 611 389 556 333 611 556 778 556 556 500 389 280 389 584".split(" ").map(Number)
+  };
+  // Texto a WinAnsi (un byte por carácter)
+  var PDF_MAP = {"€":128,"‚":130,"„":132,"…":133,"–":150,"—":151,"‘":145,"’":146,"“":147,"”":148,"•":149,"−":45,"\u00a0":32,"\u202f":32,"\u2009":32};
+  function pdfChar(ch){
+    if(PDF_MAP[ch]) return String.fromCharCode(PDF_MAP[ch]);
+    var c = ch.charCodeAt(0);
+    if(c>=32 && c<=126) return ch;
+    if(c>=160 && c<=255) return ch;
+    var base = ch.normalize("NFD").replace(/[̀-ͯ]/g,"");
+    return base.length===1 && base.charCodeAt(0)<127 ? base : "?";
+  }
+  function pdfText(str){ return Array.from(String(str)).map(pdfChar).join(""); }
+  function pdfWidth(str, bold, size){
+    var tbl = bold ? PDF_W.B : PDF_W.R, w = 0;
+    for(var i=0;i<str.length;i++){
+      var c = str.charCodeAt(i);
+      if(c>=32 && c<=126){ w += tbl[c-32]; continue; }
+      if(c===128) { w += 556; continue; }
+      if(c===133 || c===151) { w += 1000; continue; }
+      if(c===150 || c===149) { w += c===150 ? 556 : 350; continue; }
+      var base = String.fromCharCode(c).normalize("NFD").charCodeAt(0);
+      w += (base>=32 && base<=126) ? tbl[base-32] : 556;
+    }
+    return w*size/1000;
+  }
+  function pdfEsc(str){ return str.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)"); }
+  function pdfRgb(hex){ var n=parseInt(hex.slice(1),16); return [((n>>16)&255)/255, ((n>>8)&255)/255, (n&255)/255].map(function(x){ return x.toFixed(3); }).join(" "); }
+
+  function PdfPage(W, H){ this.W=W; this.H=H; this.ops=[]; }
+  PdfPage.prototype.rect = function(x, top, w, h, fill){ this.ops.push(pdfRgb(fill)+" rg "+x.toFixed(2)+" "+(this.H-top-h).toFixed(2)+" "+w.toFixed(2)+" "+h.toFixed(2)+" re f"); };
+  PdfPage.prototype.line = function(x1, t1, x2, t2, color, lw){ this.ops.push(pdfRgb(color)+" RG "+(lw||0.5)+" w "+x1.toFixed(2)+" "+(this.H-t1).toFixed(2)+" m "+x2.toFixed(2)+" "+(this.H-t2).toFixed(2)+" l S"); };
+  // texto ajustado a un ancho: reduce el tamaño hasta "min" y, si aún no cabe, recorta con "…"
+  PdfPage.prototype.text = function(str, x, baseTop, o){
+    o = o || {}; var size = o.size||8, bold = !!o.bold, t = pdfText(str);
+    if(o.maxW){
+      var min = o.min || size;
+      while(size>min && pdfWidth(t,bold,size)>o.maxW) size = Math.round((size-0.25)*100)/100;
+      if(pdfWidth(t,bold,size)>o.maxW){ while(t.length>1 && pdfWidth(t+"\u0085",bold,size)>o.maxW) t = t.slice(0,-1); t = t.replace(/\s+$/,"")+"\u0085"; }
+    }
+    var w = pdfWidth(t,bold,size), xx = o.align==="right" ? x - w : o.align==="center" ? x - w/2 : x;
+    this.ops.push("BT /"+(bold?"F2":"F1")+" "+size+" Tf "+pdfRgb(o.color||"#1d1b20")+" rg "+xx.toFixed(2)+" "+(this.H-baseTop).toFixed(2)+" Td ("+pdfEsc(t)+") Tj ET");
+  };
+  function pdfBuild(pages){
+    var objs = [], kids = [];
+    objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+    objs[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+    objs[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+    var n = 5;
+    pages.forEach(function(pg){
+      var body = pg.ops.join("\n"), pageId = n++, contId = n++;
+      objs[contId] = "<< /Length "+body.length+" >>\nstream\n"+body+"\nendstream";
+      objs[pageId] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+pg.W+" "+pg.H+"] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents "+contId+" 0 R >>";
+      kids.push(pageId+" 0 R");
+    });
+    objs[2] = "<< /Type /Pages /Kids ["+kids.join(" ")+"] /Count "+kids.length+" >>";
+    var out = "%PDF-1.4\n%âãÏÓ\n", offs = [];
+    for(var i=1;i<n;i++){ offs[i] = out.length; out += i+" 0 obj\n"+objs[i]+"\nendobj\n"; }
+    var xref = out.length;
+    out += "xref\n0 "+n+"\n0000000000 65535 f \n";
+    for(var j=1;j<n;j++) out += String(offs[j]).padStart(10,"0")+" 00000 n \n";
+    out += "trailer\n<< /Size "+n+" /Root 1 0 R /Info << /Producer (MADA Salones - Panel de cierres) >> >>\nstartxref\n"+xref+"\n%%EOF\n";
+    var bytes = new Uint8Array(out.length);
+    for(var k=0;k<out.length;k++) bytes[k] = out.charCodeAt(k) & 255;
+    return bytes;
+  }
+
+  function ctPdfBytes(id){
+    var d = state[id], c = d.cuentas, res = ctCalc(c), an = ctAnnual(res);
+    var pg = new PdfPage(842, 595), M = 28, X0 = M, X1 = 842 - M;
+    var INK = "#1d1b20", MUTED = "#6b6670", LINE = "#d9d5dc", ACC = "#5b2a6e";
+    // Cabecera
+    pg.text("Cuenta de resultados · "+ctLabel(d), X0, M+16, {size:16, bold:true, color:INK, maxW:X1-X0-190, min:11});
+    pg.text("MADA Salones SL", X1, M+8, {size:9, bold:true, color:ACC, align:"right"});
+    pg.text("Generado el "+fmtDate(isoOf(new Date())), X1, M+20, {size:8, color:MUTED, align:"right"});
+    var sub = (c.iva==="sin" ? "Ingresos registrados sin IVA: el total de ingresos es el neto." : "Ingresos registrados con IVA: se resta el 21 % para obtener los ingresos netos.")
+      + (d.real!=null ? "  ·  Traspaso real "+EUR.format(d.real) : d.pedido!=null ? "  ·  Traspaso pedido "+EUR.format(d.pedido) : "");
+    pg.text(sub, X0, M+32, {size:8.5, color:MUTED, maxW:X1-X0, min:7});
+    // Resumen (los mismos datos que las tarjetas del panel)
+    var tiles = Array.prototype.map.call(document.querySelectorAll("#ctKpis .tile"), function(t){
+      var k=t.querySelector(".k"), v=t.querySelector(".v"), s2=t.querySelector(".s");
+      return {k:k?k.textContent:"", v:v?v.textContent:"", s:s2?s2.textContent:"", neg: v && v.classList.contains("neg")};
+    });
+    var top = M+44;
+    if(tiles.length){
+      var gap = 8, tw = (X1-X0-gap*(tiles.length-1))/tiles.length;
+      tiles.forEach(function(t, i){
+        var x = X0 + i*(tw+gap);
+        pg.rect(x, top, tw, 44, "#f5f2f7");
+        pg.text(t.k.toUpperCase(), x+8, top+12, {size:6.5, bold:true, color:MUTED, maxW:tw-16, min:5.5});
+        pg.text(t.v, x+8, top+27, {size:12, bold:true, color: t.neg ? "#c0392b" : INK, maxW:tw-16, min:8});
+        pg.text(t.s, x+8, top+38, {size:6.5, color:MUTED, maxW:tw-16, min:5.5});
+      });
+      top += 56;
+    }
+    // Tabla
+    var wCon = 168, wTot = 70, wM = (X1-X0-wCon-wTot)/12, rh = 15.2, hh = 17;
+    function colX(i){ return X0 + wCon + i*wM; }
+    pg.rect(X0, top, X1-X0, hh, "#2b2233");
+    pg.text("CONCEPTO", X0+6, top+11.5, {size:7, bold:true, color:"#ffffff"});
+    c.meses.forEach(function(m, i){ pg.text(String(m||"").toUpperCase(), colX(i)+wM-5, top+11.5, {size:7, bold:true, color:"#ffffff", align:"right", maxW:wM-8, min:5.5}); });
+    pg.text("TOTAL AÑO", X1-5, top+11.5, {size:7, bold:true, color:"#ffffff", align:"right"});
+    top += hh;
+    var tableTop = top;
+    function num(v){ return v==null ? "" : fmt2(v); }
+    CT_ROWS.forEach(function(r){
+      var y = top, base = top + rh - 4.6;
+      if(r.sec){
+        pg.rect(X0, y, X1-X0, rh, "#efe7f3");
+        pg.text(r.sec.toUpperCase(), X0+6, base, {size:7, bold:true, color:ACC});
+        top += rh; return;
+      }
+      var label = r.t, cells = [], total = "", bold = false, fill = null, color = INK, negColor = "#c0392b";
+      if(r.calc){
+        bold = true;
+        fill = r.calc==="util" ? "#2b2233" : r.calc==="neto" ? "#e6eef8" : "#f1f0f2";
+        color = r.calc==="util" ? "#ffffff" : r.calc==="neto" ? "#1f4e8c" : INK;
+        if(r.calc==="util") negColor = "#ffb3a8";
+        if(r.calc==="iva" && res.sin) label = "IVA (no se resta: ingresos sin IVA)";
+        for(var i=0;i<12;i++) cells.push(res.has[i] ? (r.calc==="iva" && res.sin ? "–" : res[r.calc][i]) : null);
+        total = res.has.some(Boolean) ? (r.calc==="iva" && res.sin ? "–" : an[r.calc]) : null;
+      } else {
+        for(var j=0;j<12;j++) cells.push(c.v[r.k][j]);
+        total = c.v[r.k].some(function(x){ return x!=null; }) ? sum12(c.v[r.k]) : null;
+      }
+      if(fill) pg.rect(X0, y, X1-X0, rh, fill);
+      pg.text(label, X0+6, base, {size:7.5, bold:bold, color:color, maxW:wCon-10, min:6});
+      cells.forEach(function(v, i){
+        if(v==null) return;
+        var t = typeof v==="number" ? num(v) : v;
+        pg.text(t, colX(i)+wM-5, base, {size:7.2, bold:bold, color: (typeof v==="number" && v<0) ? negColor : color, align:"right", maxW:wM-7, min:5.5});
+      });
+      if(total!=null){
+        var tt = typeof total==="number" ? num(total)+" €" : total;
+        pg.text(tt, X1-5, base, {size:7.2, bold:true, color: (typeof total==="number" && total<0) ? negColor : color, align:"right", maxW:wTot-7, min:5.5});
+      }
+      top += rh;
+      pg.line(X0, top, X1, top, LINE, 0.4);
+    });
+    // líneas verticales y marco
+    for(var k=0;k<=12;k++) pg.line(colX(k), tableTop, colX(k), top, LINE, 0.4);
+    pg.line(X0, tableTop-hh, X0, top, LINE, 0.6); pg.line(X1, tableTop-hh, X1, top, LINE, 0.6);
+    pg.line(X0, top, X1, top, "#2b2233", 0.8);
+    // pie
+    pg.text("Importes en euros. Gastos tal como se registraron en el panel. Utilidad = ingresos netos − total de gastos.", X0, Math.min(595-M+6, top+14), {size:7, color:MUTED, maxW:X1-X0, min:6});
+    return pdfBuild([pg]);
+  }
+  function ctPdfName(d){
+    var s = ("Cuentas Cierre "+d.n+(d.salon ? " "+d.salon : "")).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9 _-]+/g,"").trim().replace(/\s+/g,"-");
+    return s+"-"+isoOf(new Date())+".pdf";
+  }
+  $("ctPdf").addEventListener("click", function(){
+    var btn = this, msg = $("ctPdfMsg"), d = state[ctSel]; if(!d) return;
+    msg.textContent = "";
+    var bytes;
+    try{ bytes = ctPdfBytes(ctSel); }catch(e){ msg.textContent = "No se pudo generar el PDF."; return; }
+    btn.disabled = true;
+    downloadsReady.then(function(dl){
+      if(!dl){ msg.textContent = "Esta vista no permite descargar archivos. Abre el panel en claude.ai."; return; }
+      return dl.save({filename: ctPdfName(d), data: new Blob([bytes], {type:"application/pdf"})}).then(function(r){
+        if(r && r.status==="saved") msg.textContent = "PDF descargado: "+ctPdfName(d)+".";
+      }, function(err){
+        var code = err && err.code;
+        msg.textContent = code==="declined" ? "Descarga cancelada." : code==="rate_limited" ? "Ya hay una descarga pendiente de confirmar. Inténtalo en unos segundos." : "No se pudo descargar el PDF en esta vista.";
+      });
+    }).then(function(){ btn.disabled = false; }, function(){ btn.disabled = false; });
   });
 
   $("ctFillBtn").addEventListener("click", function(){
