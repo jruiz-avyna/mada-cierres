@@ -304,6 +304,15 @@ select.inp{appearance:auto}
 .ct-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px}
 .ct-head h2{margin:0}
 .ct-fill{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.ct-iva{display:flex;flex-direction:column;gap:4px}
+.ct-iva-l{font-size:13px;font-weight:600;color:var(--muted)}
+.ivasel{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.ivasel button{border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:8px 14px;cursor:pointer}
+.ivasel button+button{border-left:1px solid var(--line)}
+.ivasel button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.ivasel button:not([aria-pressed="true"]):hover{color:var(--ink)}
+.ivasel button:disabled{cursor:default}
+.ivasel button:disabled:not([aria-pressed="true"]){opacity:.6}
 .ct-fill .field{gap:2px}
 .ct-fill .inp{padding:6px 10px;width:auto}
 .ct-fill .btn{padding:7px 12px}
@@ -512,13 +521,20 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
             <h2 id="ctTitle">Cuenta de resultados</h2>
             <p class="form-note" id="ctSub">Últimos 12 meses. Toca el título de un mes para cambiarlo.</p>
           </div>
+          <div class="ct-iva" role="group" aria-labelledby="ctIvaLbl">
+            <span class="ct-iva-l" id="ctIvaLbl">Los ingresos vienen</span>
+            <div class="ivasel">
+              <button type="button" id="ctIvaCon" data-v="con" aria-pressed="true">Con IVA</button>
+              <button type="button" id="ctIvaSin" data-v="sin" aria-pressed="false">Sin IVA</button>
+            </div>
+          </div>
           <div class="ct-fill" id="ctFill">
             <div class="field"><label for="ctFirst">Rellenar meses desde</label><input class="inp" id="ctFirst" type="month"></div>
             <button class="btn btn-ghost" id="ctFillBtn" type="button">Aplicar</button>
           </div>
         </div>
         <div class="ct-scroll" id="ctScroll"><table class="ct" id="ctTable"></table></div>
-        <p class="form-note">Los totales, el IVA (21 % incluido en los ingresos), el total de gastos y la utilidad se calculan solos. Puedes pegar una fila o un bloque copiado de Excel: se rellena hacia la derecha y hacia abajo desde la celda donde pegues.</p>
+        <p class="form-note"><span id="ctNote">Los totales, el IVA (21 % incluido en los ingresos), el total de gastos y la utilidad se calculan solos.</span> Puedes pegar una fila o un bloque copiado de Excel: se rellena hacia la derecha y hacia abajo desde la celda donde pegues.</p>
       </div>
     </div>
   </section>
@@ -741,10 +757,11 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
   var MES_CORTO = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   function mesesDesde(y, m){ var out=[]; for(var i=0;i<12;i++){ var mm=(m+i)%12, yy=y+Math.floor((m+i)/12); out.push(MES_CORTO[mm]+"-"+String(yy).slice(-2)); } return out; }
   function mesesPorDefecto(){ var t=new Date(); var m=t.getMonth()-12, y=t.getFullYear(); if(m<0){ m+=12; y--; } return mesesDesde(y, m); }
-  function blankCuentas(){ var v={}; CT_KEYS.forEach(function(k){ v[k]=[null,null,null,null,null,null,null,null,null,null,null,null]; }); return {meses:mesesPorDefecto(), v:v}; }
+  function blankCuentas(){ var v={}; CT_KEYS.forEach(function(k){ v[k]=[null,null,null,null,null,null,null,null,null,null,null,null]; }); return {meses:mesesPorDefecto(), v:v, iva:"con"}; }
   function normCuentas(raw){
     var c = blankCuentas();
     if(!raw || typeof raw!=="object") return c;
+    c.iva = raw.iva==="sin" ? "sin" : "con";
     if(Array.isArray(raw.meses)) for(var i=0;i<12;i++){ if(typeof raw.meses[i]==="string") c.meses[i] = raw.meses[i].slice(0,16); }
     if(raw.v && typeof raw.v==="object") CT_KEYS.forEach(function(k){
       var a = raw.v[k]; if(!Array.isArray(a)) return;
@@ -1324,7 +1341,7 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
   }
 
   /* ---------- Cuentas ---------- */
-  var ctSel = null, ctBuiltKey = "", ctCells = {}, ctCalcCells = {}, ctTotCells = {};
+  var ctSel = null, ctBuiltKey = "", ctCells = {}, ctCalcCells = {}, ctTotCells = {}, ctIvaLabel = null;
   var NF2 = new Intl.NumberFormat("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:"always"});
   function fmt2(v){ return v==null ? "" : NF2.format(v); }
   function r2(v){ return Math.round(v*100)/100; }
@@ -1337,18 +1354,18 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
     return isFinite(v) ? {ok:true, v:r2(v)} : {ok:false};
   }
   function ctCalc(c){
-    var out = {ing:[], iva:[], neto:[], gas:[], util:[], has:[]};
+    var sin = c.iva==="sin", out = {ing:[], iva:[], neto:[], gas:[], util:[], has:[], sin:sin};
     for(var i=0;i<12;i++){
       var ing=0, gas=0, any=false;
       CT_ROWS.forEach(function(r){ if(!r.k) return; var x=c.v[r.k][i]; if(x!=null){ any=true; if(r.g==="ing") ing+=x; else gas+=x; } });
-      var iva = r2(ing - ing/1.21), neto = r2(ing - iva);
+      var iva = sin ? 0 : r2(ing - ing/1.21), neto = r2(ing - iva);
       out.ing.push(r2(ing)); out.iva.push(iva); out.neto.push(neto); out.gas.push(r2(gas)); out.util.push(r2(neto-gas)); out.has.push(any);
     }
     return out;
   }
   /* Como en la hoja original: el IVA anual se calcula sobre el total del año, no sumando los meses redondeados. */
   function ctAnnual(res){
-    var ing = sum12(res.ing), gas = sum12(res.gas), iva = r2(ing - ing/1.21), neto = r2(ing - iva);
+    var ing = sum12(res.ing), gas = sum12(res.gas), iva = res.sin ? 0 : r2(ing - ing/1.21), neto = r2(ing - iva);
     return {ing:ing, iva:iva, neto:neto, gas:gas, util:r2(neto-gas)};
   }
   function sum12(a){ var t=0; a.forEach(function(x){ if(x!=null) t+=x; }); return r2(t); }
@@ -1408,7 +1425,8 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
       if(r.sec){ tr.className="sec"; var th=el("th","c-con",r.sec); var fill=el("td"); fill.colSpan=13; tr.append(th, fill); tb.append(tr); return; }
       if(r.calc){
         tr.className = "calc "+(r.cls||"");
-        tr.append(el("th","c-con",r.t)); ctCalcCells[r.calc] = [];
+        var lab = el("th","c-con",r.t); tr.append(lab); ctCalcCells[r.calc] = [];
+        if(r.calc==="iva") ctIvaLabel = lab;
         for(var i=0;i<12;i++){ var td=el("td","num"); tr.append(td); ctCalcCells[r.calc].push(td); }
         var tt = el("td","c-tot"); tr.append(tt); ctTotCells[r.calc] = tt; tb.append(tr); return;
       }
@@ -1468,11 +1486,12 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
     });
     ["ing","iva","neto","gas","util"].forEach(function(k){
       ctCalcCells[k].forEach(function(td, j){
-        var v = res[k][j]; td.textContent = res.has[j] ? fmt2(v) : ""; td.classList.toggle("neg", res.has[j] && v<0);
+        var v = res[k][j]; td.textContent = res.has[j] ? (k==="iva" && res.sin ? "–" : fmt2(v)) : ""; td.classList.toggle("neg", res.has[j] && v<0);
       });
       var tot = ctAnnual(res)[k], anyM = res.has.some(Boolean);
-      ctTotCells[k].textContent = anyM ? fmt2(tot)+" €" : ""; ctTotCells[k].classList.toggle("neg", anyM && tot<0);
+      ctTotCells[k].textContent = anyM ? (k==="iva" && res.sin ? "–" : fmt2(tot)+" €") : ""; ctTotCells[k].classList.toggle("neg", anyM && tot<0);
     });
+    ctIvaUI(c);
     if(!fromTyping) c.meses.forEach(function(m,i){ var h=$("mes-"+i); if(h && document.activeElement!==h) h.value = m; });
     ctKpis(d, res);
   }
@@ -1496,6 +1515,26 @@ table.gt tbody tr.cr-det td{background:var(--bg);padding:6px 8px 10px}
       tile("Gastos asignados", EUR.format(gx), "Sin IVA. Falta el precio del traspaso para calcular la recuperación");
     }
   }
+
+  function ctIvaUI(c){
+    var sin = c.iva==="sin";
+    ["ctIvaCon","ctIvaSin"].forEach(function(id){
+      var b = $(id), on = b.dataset.v===c.iva; b.setAttribute("aria-pressed", on ? "true" : "false"); b.disabled = readOnly;
+    });
+    if(ctIvaLabel) ctIvaLabel.textContent = sin ? "IVA (no se resta: ingresos sin IVA)" : "IVA (21 % incluido)";
+    $("ctNote").textContent = sin
+      ? "Los ingresos de este cierre están sin IVA: el total de ingresos ya es el neto y no se le resta nada. El total de gastos y la utilidad se calculan solos."
+      : "Los ingresos de este cierre incluyen IVA: se resta el 21 % para obtener los ingresos netos. El total de gastos y la utilidad se calculan solos.";
+  }
+  ["ctIvaCon","ctIvaSin"].forEach(function(id){
+    $(id).addEventListener("click", function(){
+      if(readOnly || !state[ctSel]) return;
+      var v = this.dataset.v, c = state[ctSel].cuentas;
+      if(c.iva===v) return;
+      c.iva = v; ctUpdate(); markDirty(); flushSoon();
+      $(id).focus();
+    });
+  });
 
   $("ctFillBtn").addEventListener("click", function(){
     var v = $("ctFirst").value; if(!/^\d{4}-\d{2}$/.test(v) || !state[ctSel]) { $("ctFirst").focus(); return; }
